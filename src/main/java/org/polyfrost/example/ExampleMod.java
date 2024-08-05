@@ -1,11 +1,15 @@
 package org.polyfrost.example;
 
-import org.polyfrost.example.command.ExampleCommand;
+import net.minecraft.client.Minecraft;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.polyfrost.example.config.TestConfig;
 import cc.polyfrost.oneconfig.events.event.InitializationEvent;
 import net.minecraftforge.fml.common.Mod;
 import cc.polyfrost.oneconfig.utils.commands.CommandManager;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import org.polyfrost.example.mixin.EntityLivingBaseAccessorMixin;
 
 /**
  * The entrypoint of the Example Mod that initializes it.
@@ -27,7 +31,14 @@ public class ExampleMod {
     // Register the config and commands.
     @Mod.EventHandler
     public void onInit(FMLInitializationEvent event) {
+        MinecraftForge.EVENT_BUS.register(this);
         config = new TestConfig();
-        CommandManager.INSTANCE.registerCommand(new ExampleCommand());
+    }
+
+    @SubscribeEvent
+    public void onTick(TickEvent.ClientTickEvent e) {
+        if (Minecraft.getMinecraft().thePlayer != null && TestConfig.ndj && e.phase.equals(TickEvent.Phase.START)) {
+            ((EntityLivingBaseAccessorMixin) Minecraft.getMinecraft().thePlayer).setJumpTicks(0);
+        }
     }
 }
