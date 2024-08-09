@@ -1,5 +1,6 @@
 package org.polyfrost.example.mixin;
 
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.EntityLivingBase;
 import org.polyfrost.example.config.ModConfig;
@@ -17,6 +18,9 @@ public class RenderLivingEntityMixin {
             )
     )
     private boolean cancel(EntityLivingBase instance) {
+        if(instance.isSneaking()){
+            GlStateManager.translate(0.0F, 9.374999F, 0.0F);
+        }
         return !ModConfig.nametagsOnShift && instance.isSneaking();
     }
 }

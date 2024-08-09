@@ -1,12 +1,15 @@
 package org.polyfrost.example;
 
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.polyfrost.example.config.ModConfig;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 
-@Mod(modid = Jump.MODID, name = Jump.NAME, version = Jump.VERSION)
-public class Jump {
+@Mod(modid = MultiCheat.MODID, name = MultiCheat.NAME, version = MultiCheat.VERSION)
+public class MultiCheat {
 
     public static final String MODID = "@ID@";
     public static final String NAME = "@NAME@";
@@ -18,5 +21,4 @@ public class Jump {
         MinecraftForge.EVENT_BUS.register(this);
         config = new ModConfig();
     }
-
 }

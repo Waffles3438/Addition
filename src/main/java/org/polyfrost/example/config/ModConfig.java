@@ -1,6 +1,6 @@
 package org.polyfrost.example.config;
 
-import org.polyfrost.example.Jump;
+import org.polyfrost.example.MultiCheat;
 import cc.polyfrost.oneconfig.config.Config;
 import cc.polyfrost.oneconfig.config.annotations.Switch;
 import cc.polyfrost.oneconfig.config.data.Mod;
@@ -21,7 +21,7 @@ public class ModConfig extends Config {
     public static boolean nametagsOnShift = false;
 
     public ModConfig() {
-        super(new Mod(Jump.NAME, ModType.UTIL_QOL), Jump.MODID + ".json");
+        super(new Mod(MultiCheat.NAME, ModType.UTIL_QOL), MultiCheat.MODID + ".json");
         initialize();
     }
 }
