@@ -17,8 +17,6 @@ public class RenderLivingEntityMixin {
             )
     )
     private boolean cancel(EntityLivingBase instance) {
-        if(ModConfig.nametagsOnShift)
-            return false;
-        return instance.isSneaking();
+        return !ModConfig.nametagsOnShift && instance.isSneaking();
     }
 }
