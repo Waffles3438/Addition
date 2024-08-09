@@ -7,8 +7,10 @@
     "maxShiftBy": 5
   },
   "client": [
-    "EntityLivingBaseAccessor",
     "RenderLivingEntityMixin"
   ],
-  "verbose": true
+  "verbose": true,
+  "mixins": [
+    "EntityLivingBaseMixin"
+  ]
 }
