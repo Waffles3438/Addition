@@ -15,10 +15,14 @@ public class ModConfig extends Config {
     public static boolean ndj = false;
 
     @Switch(
-            name = "Show nametags on shift",
-            size = OptionSize.DUAL
+            name = "Show nametags on shift"
     )
     public static boolean nametagsOnShift = false;
+
+    @Switch(
+            name = "Show invisible player nametags"
+    )
+    public static boolean invisNametags = false;
 
     public ModConfig() {
         super(new Mod(MultiCheat.NAME, ModType.UTIL_QOL), MultiCheat.MODID + ".json");
