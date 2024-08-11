@@ -24,6 +24,11 @@ public class ModConfig extends Config {
     )
     public static boolean invisNametags = false;
 
+    @Switch(
+            name = "Extend nametag range"
+    )
+    public static boolean extendNametagRange = false;
+
     public ModConfig() {
         super(new Mod(MultiCheat.NAME, ModType.UTIL_QOL), MultiCheat.MODID + ".json");
         initialize();

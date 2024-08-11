@@ -9,7 +9,9 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import org.polyfrost.example.config.ModConfig;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.ArrayList;
@@ -41,6 +43,19 @@ public class RenderLivingEntityMixin {
         return entityPlayer.isSpectator() ? false : instance.isInvisible();
     }
 
+    @ModifyVariable(
+            method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
+            at = @At("STORE"),
+            ordinal = 0,
+            print = true
+    )
+    public float extendNametagRange(float range, EntityLivingBase entity) {
+        if (ModConfig.extendNametagRange) {
+            return 160F;
+        }
+        return entity.isSneaking() ? 32.0F : 64.0F;
+    }
+    
     public boolean isBot(Entity entity){
         if (entity instanceof EntityPlayer && (((EntityPlayer) entity).getDisplayNameString().contains("§c") || ((EntityPlayer) entity).getDisplayNameString().contains("[NPC]") || ((EntityPlayer) entity).getDisplayNameString().contains("[BOT]") || ((EntityPlayer) entity).getDisplayNameString().contains("iAT3") || ((EntityPlayer) entity).getDisplayNameString().isEmpty() || (entity.getUniqueID().version() == 2) || (((EntityPlayer) entity).getDisplayNameString().contains("§") && (((EntityPlayer) entity).getDisplayNameString().contains("SHOP") || ((EntityPlayer) entity).getDisplayNameString().contains("UPGRADE"))))) {
             return true;
