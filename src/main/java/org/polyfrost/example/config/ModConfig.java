@@ -29,6 +29,11 @@ public class ModConfig extends Config {
     )
     public static boolean extendNametagRange = false;
 
+    @Switch(
+            name = "Show nametags behind walls"
+    )
+    public static boolean nametagsThroughWalls = false;
+
     public ModConfig() {
         super(new Mod(MultiCheat.NAME, ModType.UTIL_QOL), MultiCheat.MODID + ".json");
         initialize();
