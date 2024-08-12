@@ -24,7 +24,6 @@ public class RenderMixin {
     )
     private double extendNametagRange(Entity entityIn, Entity instance) {
         if(ModConfig.extendNametagRange && !isBot(entityIn)) {
-            System.out.println("returned 0.0D");
             return 0.0D;
         }
         double d0 = instance.posX - entityIn.posX;
