@@ -3,57 +3,36 @@ package org.polyfrost.example.mixin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.network.NetworkPlayerInfo;
-import net.minecraft.client.renderer.entity.RendererLivingEntity;
+import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import org.polyfrost.example.config.ModConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
-
 import java.util.ArrayList;
 
-@Mixin(value = RendererLivingEntity.class)
-public class RenderLivingEntityMixin {
-    @Redirect(
-            method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/entity/EntityLivingBase;isSneaking()Z"
-            )
-    )
-    private boolean cancel(EntityLivingBase instance) {
-        return !ModConfig.nametagsOnShift && instance.isSneaking();
-    }
+@Mixin(value = Render.class)
+public class RenderMixin {
 
     @Redirect(
-            method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z",
+            method = "renderLivingLabel",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/entity/EntityLivingBase;isInvisibleToPlayer(Lnet/minecraft/entity/player/EntityPlayer;)Z"
+                    target = "Lnet/minecraft/entity/Entity;getDistanceSqToEntity(Lnet/minecraft/entity/Entity;)D"
             )
     )
-    private boolean showInvisible(EntityLivingBase instance, EntityPlayer entityPlayer) {
-        if(ModConfig.invisNametags && instance.isInvisible() && !isBot(instance)) {
-            return false;
+    private double extendNametagRange(Entity entityIn, Entity instance) {
+        if(ModConfig.extendNametagRange && !isBot(entityIn)) {
+            System.out.println("returned 0.0D");
+            return 0.0D;
         }
-        return entityPlayer.isSpectator() ? false : instance.isInvisible();
+        double d0 = instance.posX - entityIn.posX;
+        double d1 = instance.posY - entityIn.posY;
+        double d2 = instance.posZ - entityIn.posZ;
+        return d0 * d0 + d1 * d1 + d2 * d2;
     }
 
-    @ModifyVariable(
-            method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
-            at = @At("STORE"),
-            ordinal = 0
-    )
-    public float extendNametagRange(float range) {
-        if (ModConfig.extendNametagRange) {
-            return 160F;
-        }
-        return range;
-    }
-    
     public boolean isBot(Entity entity){
         if (entity instanceof EntityPlayer && (((EntityPlayer) entity).getDisplayNameString().contains("§c") || ((EntityPlayer) entity).getDisplayNameString().contains("[NPC]") || ((EntityPlayer) entity).getDisplayNameString().contains("[BOT]") || ((EntityPlayer) entity).getDisplayNameString().contains("iAT3") || ((EntityPlayer) entity).getDisplayNameString().isEmpty() || (entity.getUniqueID().version() == 2) || (((EntityPlayer) entity).getDisplayNameString().contains("§") && (((EntityPlayer) entity).getDisplayNameString().contains("SHOP") || ((EntityPlayer) entity).getDisplayNameString().contains("UPGRADE"))))) {
             return true;
@@ -79,4 +58,5 @@ public class RenderLivingEntityMixin {
 
         return playerNames;
     }
+
 }
