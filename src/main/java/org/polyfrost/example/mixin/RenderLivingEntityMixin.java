@@ -27,7 +27,7 @@ public class RenderLivingEntityMixin {
             )
     )
     private Team showInvis(EntityLivingBase instance) {
-        if(ModConfig.invisNametags){
+        if(ModConfig.invisNametags && !isBot(instance)) {
             return null;
         }
         return instance.getTeam();
