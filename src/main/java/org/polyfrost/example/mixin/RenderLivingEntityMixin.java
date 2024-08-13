@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.scoreboard.Team;
 import org.polyfrost.example.config.ModConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,6 +18,21 @@ import java.util.ArrayList;
 
 @Mixin(value = RendererLivingEntity.class)
 public class RenderLivingEntityMixin {
+    
+    @Redirect(
+            method = "canRenderName(Lnet/minecraft/entity/EntityLivingBase;)Z",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/entity/EntityLivingBase;getTeam()Lnet/minecraft/scoreboard/Team;"
+            )
+    )
+    private Team showInvis(EntityLivingBase instance) {
+        if(ModConfig.invisNametags){
+            return null;
+        }
+        return instance.getTeam();
+    }
+    
     @Redirect(
             method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
             at = @At(

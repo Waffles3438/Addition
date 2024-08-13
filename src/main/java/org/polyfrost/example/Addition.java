@@ -9,8 +9,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import org.polyfrost.example.mixin.EntityLivingBaseAccessor;
 
-@Mod(modid = MultiCheat.MODID, name = MultiCheat.NAME, version = MultiCheat.VERSION)
-public class MultiCheat {
+@Mod(modid = Addition.MODID, name = Addition.NAME, version = Addition.VERSION)
+public class Addition {
 
     public static final String MODID = "@ID@";
     public static final String NAME = "@NAME@";

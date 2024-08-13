@@ -1,6 +1,6 @@
 package org.polyfrost.example.config;
 
-import org.polyfrost.example.MultiCheat;
+import org.polyfrost.example.Addition;
 import cc.polyfrost.oneconfig.config.Config;
 import cc.polyfrost.oneconfig.config.annotations.Switch;
 import cc.polyfrost.oneconfig.config.data.Mod;
@@ -35,7 +35,7 @@ public class ModConfig extends Config {
     public static boolean nametagsThroughWalls = false;
 
     public ModConfig() {
-        super(new Mod(MultiCheat.NAME, ModType.UTIL_QOL), MultiCheat.MODID + ".json");
+        super(new Mod(Addition.NAME, ModType.UTIL_QOL), Addition.MODID + ".json");
         initialize();
     }
 }

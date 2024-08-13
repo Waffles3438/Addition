@@ -28,6 +28,7 @@ public class RenderMixin {
     )
     private void disableDepth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
         if(ModConfig.nametagsThroughWalls && !isBot(entityIn)){
+            GlStateManager.depthFunc(519);
             return;
         }
         GlStateManager.disableDepth();
@@ -84,10 +85,7 @@ public class RenderMixin {
         if(ModConfig.extendNametagRange && !isBot(entityIn)) {
             return 0.0D;
         }
-        double d0 = instance.posX - entityIn.posX;
-        double d1 = instance.posY - entityIn.posY;
-        double d2 = instance.posZ - entityIn.posZ;
-        return d0 * d0 + d1 * d1 + d2 * d2;
+        return entityIn.getDistanceSqToEntity(instance);
     }
 
     public boolean isBot(Entity entity){
