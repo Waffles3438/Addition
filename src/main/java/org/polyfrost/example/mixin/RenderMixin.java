@@ -19,18 +19,17 @@ import java.util.ArrayList;
 @Mixin(value = Render.class)
 public class RenderMixin {
 
-    @Redirect(
+    @Inject(
             method = "renderLivingLabel",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;disableDepth()V"
+                    target = "Lnet/minecraft/client/renderer/GlStateManager;enableLighting()V"
             )
     )
-    private void disableDepth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
-        if(ModConfig.nametagsThroughWalls && !isBot(entityIn)){
-            return;
+    private void showthroughwalls(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci){
+        if(ModConfig.nametagsThroughWalls){
+            GlStateManager.enableDepth();
         }
-        GlStateManager.disableDepth();
     }
 
     @Redirect(
@@ -41,36 +40,11 @@ public class RenderMixin {
             )
     )
     private void enableDepth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
-        if(ModConfig.nametagsThroughWalls && !isBot(entityIn)){
+        if(ModConfig.nametagsThroughWalls){
+            GlStateManager.disableDepth();
             return;
         }
         GlStateManager.enableDepth();
-    }
-
-    @Inject(
-            method = "renderLivingLabel",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;pushMatrix()V"
-            )
-    )
-    private void disable(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci){
-        if(ModConfig.nametagsThroughWalls && !isBot(entityIn)){
-            GlStateManager.disableDepth();
-        }
-    }
-
-    @Inject(
-            method = "renderLivingLabel",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;popMatrix()V"
-            )
-    )
-    private void enable(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci){
-        if(ModConfig.nametagsThroughWalls && !isBot(entityIn)){
-            GlStateManager.enableDepth();
-        }
     }
 
     @Redirect(
