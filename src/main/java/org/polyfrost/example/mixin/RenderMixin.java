@@ -19,6 +19,20 @@ import java.util.ArrayList;
 @Mixin(value = Render.class)
 public class RenderMixin {
 
+    @Redirect(
+            method = "renderLivingLabel",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/GlStateManager;depthMask(Z)V"
+            )
+    )
+    private void disabledepth_and_depthmask(boolean flag){
+        if(ModConfig.nametagsThroughWalls && flag){
+            GlStateManager.disableDepth();
+        }
+        GlStateManager.depthMask(flag);
+    }
+
     @Inject(
             method = "renderLivingLabel",
             at = @At(
@@ -26,25 +40,10 @@ public class RenderMixin {
                     target = "Lnet/minecraft/client/renderer/GlStateManager;enableLighting()V"
             )
     )
-    private void showthroughwalls(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci){
+    private void enabledepth(Entity entityIn, String str, double x, double y, double z, int maxDistance, CallbackInfo ci){
         if(ModConfig.nametagsThroughWalls){
             GlStateManager.enableDepth();
         }
-    }
-
-    @Redirect(
-            method = "renderLivingLabel",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GlStateManager;enableDepth()V"
-            )
-    )
-    private void enableDepth(Entity entityIn, String str, double x, double y, double z, int maxDistance) {
-        if(ModConfig.nametagsThroughWalls){
-            GlStateManager.disableDepth();
-            return;
-        }
-        GlStateManager.enableDepth();
     }
 
     @Redirect(
