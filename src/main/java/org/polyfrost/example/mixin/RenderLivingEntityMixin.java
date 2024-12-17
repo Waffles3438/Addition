@@ -6,6 +6,7 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.monster.EntityIronGolem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.scoreboard.Team;
 import org.polyfrost.example.config.ModConfig;
@@ -71,7 +72,13 @@ public class RenderLivingEntityMixin {
     }
     
     public boolean isBot(Entity entity){
-        if (entity instanceof EntityPlayer && (((EntityPlayer) entity).getDisplayNameString().contains("§c") || ((EntityPlayer) entity).getDisplayNameString().contains("[NPC]") || ((EntityPlayer) entity).getDisplayNameString().contains("[BOT]") || ((EntityPlayer) entity).getDisplayNameString().contains("iAT3") || ((EntityPlayer) entity).getDisplayNameString().isEmpty() || (entity.getUniqueID().version() == 2) || (((EntityPlayer) entity).getDisplayNameString().contains("§") && (((EntityPlayer) entity).getDisplayNameString().contains("SHOP") || ((EntityPlayer) entity).getDisplayNameString().contains("UPGRADE"))))) {
+        if (entity instanceof EntityPlayer && (((EntityPlayer) entity).getDisplayNameString().contains("§c")
+                || ((EntityPlayer) entity).getDisplayNameString().contains("[NPC]")
+                || ((EntityPlayer) entity).getDisplayNameString().contains("[BOT]")
+                || ((EntityPlayer) entity).getDisplayNameString().contains("iAT3")
+                || ((EntityPlayer) entity).getDisplayNameString().isEmpty()
+                || (entity.getUniqueID().version() == 2)
+                || ((EntityPlayer) entity).getDisplayNameString().contains("§") && (((EntityPlayer) entity).getDisplayNameString().contains("SHOP") || ((EntityPlayer) entity).getDisplayNameString().contains("UPGRADE")))) {
             return true;
         } else {
             for (String name : getAllPlayerNamesFromTabList()) {
