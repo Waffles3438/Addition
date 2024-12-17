@@ -6,7 +6,6 @@ import net.minecraft.client.network.NetworkPlayerInfo;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.EntityIronGolem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.scoreboard.Team;
 import org.polyfrost.example.config.ModConfig;
