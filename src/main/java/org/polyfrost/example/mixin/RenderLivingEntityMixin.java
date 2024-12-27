@@ -65,7 +65,7 @@ public class RenderLivingEntityMixin {
     )
     public float extendNametagRange(float range) {
         if (ModConfig.extendNametagRange) {
-            return 128F;
+            return 256F;
         }
         return range;
     }
