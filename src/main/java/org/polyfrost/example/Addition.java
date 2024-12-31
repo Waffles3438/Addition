@@ -26,8 +26,8 @@ public class Addition {
     @SubscribeEvent
     public void onTick(TickEvent.ClientTickEvent e) {
         if (Minecraft.getMinecraft().thePlayer != null && ModConfig.ndj && e.phase.equals(TickEvent.Phase.START)) {
-            if(((EntityLivingBaseAccessor) Minecraft.getMinecraft().thePlayer).getJumpTicks() > 3){
-                ((EntityLivingBaseAccessor) Minecraft.getMinecraft().thePlayer).setJumpTicks(3);
+            if(((EntityLivingBaseAccessor) Minecraft.getMinecraft().thePlayer).getJumpTicks() > ModConfig.jumpTicks){
+                ((EntityLivingBaseAccessor) Minecraft.getMinecraft().thePlayer).setJumpTicks(ModConfig.jumpTicks);
             }
         }
     }

@@ -1,5 +1,6 @@
 package org.polyfrost.example.config;
 
+import cc.polyfrost.oneconfig.config.annotations.Slider;
 import org.polyfrost.example.Addition;
 import cc.polyfrost.oneconfig.config.Config;
 import cc.polyfrost.oneconfig.config.annotations.Switch;
@@ -13,6 +14,13 @@ public class ModConfig extends Config {
             size = OptionSize.DUAL
     )
     public static boolean ndj = false;
+
+    @Slider(
+            name = "Jump ticks",
+        min = 0, max = 10,
+        step = 1
+    )
+    public static int jumpTicks = 3;
 
     @Switch(
             name = "Show nametags on shift"
