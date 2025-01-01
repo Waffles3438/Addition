@@ -17,8 +17,8 @@ public class ModConfig extends Config {
 
     @Slider(
             name = "Jump ticks",
-        min = 0, max = 10,
-        step = 1
+            min = 0, max = 10,
+            step = 1
     )
     public static int jumpTicks = 3;
 
@@ -45,6 +45,7 @@ public class ModConfig extends Config {
     public ModConfig() {
         super(new Mod(Addition.NAME, ModType.UTIL_QOL), Addition.MODID + ".json");
         initialize();
+        addDependency("jumpTicks", "ndj");
     }
 }
 
