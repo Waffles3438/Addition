@@ -1,6 +1,7 @@
 package org.polyfrost.example.config;
 
 import cc.polyfrost.oneconfig.config.annotations.Slider;
+import cc.polyfrost.oneconfig.config.annotations.Text;
 import org.polyfrost.example.Addition;
 import cc.polyfrost.oneconfig.config.Config;
 import cc.polyfrost.oneconfig.config.annotations.Switch;
@@ -41,6 +42,12 @@ public class ModConfig extends Config {
             name = "Show nametags behind walls"
     )
     public static boolean nametagsThroughWalls = false;
+
+    @Text(
+            name = "Hypixel API",
+            secure = true, multiline = false
+    )
+    public static String api = "";
 
     public ModConfig() {
         super(new Mod(Addition.NAME, ModType.UTIL_QOL), Addition.MODID + ".json");
