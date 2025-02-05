@@ -38,8 +38,8 @@ public class StatsCommand {
         try {
             uuid = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("id").getAsString();
             Player = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("name").getAsString();
-        } catch (NullPointerException e) {
-            UChat.chat("Player is nicked");
+        } catch (Exception e) {
+            UChat.chat("Invalid player");
             return;
         }
 
@@ -64,18 +64,129 @@ public class StatsCommand {
             special = getString(profile, "rank");
         }
 
-        String color = "§7";
         String monthly = getString(profile, "monthlyRankColor");
 
-        if(Player.equals("Technoblade")) color = "§d";
-        else if (special.equals("YOUTUBER")) color = "§c";
-        else if (special.equals("ADMIN")) color = "§c";
-        else if (special.equals("GAME_MASTER")) color = "§2";
-        else if (rank.equals("MVP_PLUS") && monthly.equals("AQUA"))  color = "§b";
-        else if (rank.equals("MVP_PLUS") && monthly.equals("GOLD")) color = "§6";
-        else if (rank.equals("MVP")) color = "§b";
-        else if (rank.equals("VIP_PLUS")) color = "§a";
-        else if (rank.equals("VIP")) color = "§a";
+        if(Player.equals("Technoblade")) {
+            Player = "§d[PIG§b+++§d] " + Player;
+        } else if (special.equals("YOUTUBER")) {
+            Player = "§c[§fYOUTUBE§c] " + Player;
+        } else if (special.equals("ADMIN")) {
+            if(getString(profile, "prefix").equals("§c[OWNER]")) {
+                Player = "§c[OWNER] " + Player;
+            } else {
+                Player = "§c[ADMIN] " + Player;
+            }
+        } else if (special.equals("GAME_MASTER")) {
+            Player = "§2[GM] " + Player;
+        } else if (rank.equals("MVP_PLUS") && monthly.equals("AQUA"))  {
+            String plusColor = getString(profile, "rankPlusColor");
+            String color = "§c";
+            switch (plusColor) {
+                case "RED":
+                    color = "§c";
+                    break;
+                case "GOLD":
+                    color = "§6";
+                    break;
+                case "GREEN":
+                    color = "§a";
+                    break;
+                case "YELLOW":
+                    color = "§e";
+                    break;
+                case "LIGHT_PURPLE":
+                    color = "§d";
+                    break;
+                case "WHITE":
+                    color = "§f";
+                    break;
+                case "BLUE":
+                    color = "§9";
+                    break;
+                case "DARK_GREEN":
+                    color = "§2";
+                    break;
+                case "DARK_RED":
+                    color = "§4";
+                    break;
+                case "DARK_AQUA":
+                    color = "§3";
+                    break;
+                case "DARK_PURPLE":
+                    color = "§5";
+                    break;
+                case "GRAY":
+                    color = "§7";
+                    break;
+                case "BLACK":
+                    color = "§0";
+                    break;
+                case "DARK_BLUE":
+                    color = "§1";
+                    break;
+            }
+            if(getString(profile, "monthlyPackageRank") != null && getString(profile, "monthlyPackageRank").equals("SUPERSTAR")) {
+                Player = "§b[MVP" + color + "++" + "§b] " + Player;
+            } else {
+                Player = "§b[MVP" + color + "+" + "§b] " + Player;
+            }
+        } else if (rank.equals("MVP_PLUS") && monthly.equals("GOLD")) {
+            String plusColor = getString(profile, "rankPlusColor");
+            String color = "§c";
+            switch (plusColor) {
+                case "RED":
+                    color = "§c";
+                    break;
+                case "GOLD":
+                    color = "§6";
+                    break;
+                case "GREEN":
+                    color = "§a";
+                    break;
+                case "YELLOW":
+                    color = "§e";
+                    break;
+                case "LIGHT_PURPLE":
+                    color = "§d";
+                    break;
+                case "WHITE":
+                    color = "§f";
+                    break;
+                case "BLUE":
+                    color = "§9";
+                    break;
+                case "DARK_GREEN":
+                    color = "§2";
+                    break;
+                case "DARK_RED":
+                    color = "§4";
+                    break;
+                case "DARK_AQUA":
+                    color = "§3";
+                    break;
+                case "DARK_PURPLE":
+                    color = "§5";
+                    break;
+                case "GRAY":
+                    color = "§7";
+                    break;
+                case "BLACK":
+                    color = "§0";
+                    break;
+                case "DARK_BLUE":
+                    color = "§1";
+                    break;
+            }
+            Player = "§6[MVP" + color + "++" + "§6] " + Player;
+        } else if (rank.equals("MVP")) {
+            Player = "§b[MVP] " + Player;
+        } else if (rank.equals("VIP_PLUS")) {
+            Player = "§a[VIP§6+§a] " + Player;
+        } else if (rank.equals("VIP")) {
+            Player = "§a[VIP] " + Player;
+        } else {
+            Player = "§7" + Player;
+        }
 
         star = getValue(ach, "bedwars_level");
 
@@ -94,15 +205,15 @@ public class StatsCommand {
         bblr = (double) getValue(bw, "beds_broken_bedwars") / (double) getValue(bw, "beds_lost_bedwars");
         bblr = (double) Math.round(bblr * 100) / 100;
 
-        UChat.chat("----------------------------------------------------");
-        UChat.chat(getFormattedRank(star) + " " + color + Player);
+        UChat.chat("§9----------------------------------------------------");
+        UChat.chat(getFormattedRank(star) + " " + Player);
         UChat.chat("FKDR: " + fkdr);
         UChat.chat("Final kills: " + fk);
         UChat.chat("WLR: " + wlr);
         UChat.chat("Wins: " + w);
         UChat.chat("BBLR: " + bblr);
         UChat.chat("Beds: " + bb);
-        UChat.chat("----------------------------------------------------");
+        UChat.chat("§9----------------------------------------------------");
     }
 
     private int getValue(JsonObject type, String member) {
