@@ -47,9 +47,24 @@ public class StatsCommand {
         int star, fk, bb, w;
         double fkdr, wlr, bblr;
         connection = newConnection("https://api.hypixel.net/player?key=" + ModConfig.api + "&uuid=" + uuid);
-        profile = getStringAsJson(connection).getAsJsonObject("player");
-        ach = profile.getAsJsonObject("achievements");
-        bw = profile.getAsJsonObject("stats").getAsJsonObject("Bedwars");
+        if (connection.isEmpty()) {
+            UChat.chat("Player has never logged on Hypixel");
+            return;
+        }
+        if (connection.equals("{\"success\":true,\"player\":null}")) {
+            // player is nicked
+            UChat.chat("Player has never logged on Hypixel");
+            return;
+        }
+        try {
+            profile = getStringAsJson(connection).getAsJsonObject("player");
+            bw = profile.getAsJsonObject("stats").getAsJsonObject("Bedwars");
+            ach = profile.getAsJsonObject("achievements");
+        } catch (NullPointerException er) {
+            // never played bedwars or joined lobby
+            UChat.chat("Player has never played bedwars");
+            return;
+        }
 
         String rank;
         if(getString(profile, "newPackageRank") != null) {
@@ -57,7 +72,6 @@ public class StatsCommand {
         } else {
             rank = "non";
         }
-
 
         String special = "nothing";
         if(getString(profile, "rank") != null){
