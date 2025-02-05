@@ -12,40 +12,47 @@ import cc.polyfrost.oneconfig.config.data.OptionSize;
 public class ModConfig extends Config {
     @Switch(
             name = "No jump delay",
-            size = OptionSize.DUAL
+            size = OptionSize.DUAL,
+            subcategory = "No Jump Delay"
     )
     public static boolean ndj = false;
 
     @Slider(
             name = "Jump ticks",
             min = 0, max = 10,
-            step = 1
+            step = 1,
+            subcategory = "No Jump Delay"
     )
     public static int jumpTicks = 3;
 
     @Switch(
-            name = "Show nametags on shift"
+            name = "Show nametags on shift",
+            subcategory = "Nametags"
     )
     public static boolean nametagsOnShift = false;
 
     @Switch(
-            name = "Show invisible player nametags"
+            name = "Show invisible player nametags",
+            subcategory = "Nametags"
     )
     public static boolean invisNametags = false;
 
     @Switch(
-            name = "Extend nametag range"
+            name = "Extend nametag range",
+            subcategory = "Nametags"
     )
     public static boolean extendNametagRange = false;
 
     @Switch(
-            name = "Show nametags behind walls"
+            name = "Show nametags behind walls",
+            subcategory = "Nametags"
     )
     public static boolean nametagsThroughWalls = false;
 
     @Text(
             name = "Hypixel API",
-            secure = true, multiline = false
+            secure = true, multiline = false,
+            subcategory = "Stat Checking"
     )
     public static String api = "";
 
