@@ -48,7 +48,7 @@ public class StatsCommand {
         double fkdr, wlr, bblr;
         connection = newConnection("https://api.hypixel.net/player?key=" + ModConfig.api + "&uuid=" + uuid);
         if (connection.isEmpty()) {
-            UChat.chat("Player has never logged on Hypixel");
+            UChat.chat("Invalid API key");
             return;
         }
         if (connection.equals("{\"success\":true,\"player\":null}")) {
