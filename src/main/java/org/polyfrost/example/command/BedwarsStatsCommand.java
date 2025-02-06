@@ -17,7 +17,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 @Command(value = "bw")
-public class StatsCommand {
+public class BedwarsStatsCommand {
 
     @Main
     private void main(@Greedy String player) {
@@ -44,8 +44,6 @@ public class StatsCommand {
         }
 
         JsonObject profile, ach, bw;
-        int star, fk, bb, w;
-        double fkdr, wlr, bblr;
         connection = newConnection("https://api.hypixel.net/player?key=" + ModConfig.api + "&uuid=" + uuid);
         if (connection.isEmpty()) {
             UChat.chat("Invalid API key");
@@ -202,6 +200,9 @@ public class StatsCommand {
             Player = "§7" + Player;
         }
 
+        int star, fk, bb, w;
+        double fkdr, wlr, bblr;
+
         star = getValue(ach, "bedwars_level");
 
         fk = getValue(bw, "final_kills_bedwars");
@@ -210,16 +211,16 @@ public class StatsCommand {
 
         w = getValue(bw, "wins_bedwars");
 
-        fkdr = (double) getValue(bw, "final_kills_bedwars") / (double) getValue(bw, "final_deaths_bedwars");
+        fkdr = (double) fk / (double) getValue(bw, "final_deaths_bedwars");
         fkdr = (double) Math.round(fkdr * 100) / 100;
 
-        wlr = (double) getValue(bw, "wins_bedwars") / (double) getValue(bw, "losses_bedwars");
+        wlr = (double) w / (double) getValue(bw, "losses_bedwars");
         wlr = (double) Math.round(wlr * 100) / 100;
 
-        bblr = (double) getValue(bw, "beds_broken_bedwars") / (double) getValue(bw, "beds_lost_bedwars");
+        bblr = (double) bb / (double) getValue(bw, "beds_lost_bedwars");
         bblr = (double) Math.round(bblr * 100) / 100;
 
-        UChat.chat("§9----------------------------------------------------");
+        UChat.chat("§9------------------------------------------");
         UChat.chat(getFormattedRank(star) + " " + Player);
         UChat.chat("FKDR: " + fkdr);
         UChat.chat("Final kills: " + fk);
@@ -227,7 +228,7 @@ public class StatsCommand {
         UChat.chat("Wins: " + w);
         UChat.chat("BBLR: " + bblr);
         UChat.chat("Beds: " + bb);
-        UChat.chat("§9----------------------------------------------------");
+        UChat.chat("§9------------------------------------------");
     }
 
     private int getValue(JsonObject type, String member) {
