@@ -219,7 +219,7 @@ public class BedwarsStatsCommand {
 
         bblr = (double) bb / (double) getValue(bw, "beds_lost_bedwars");
         bblr = (double) Math.round(bblr * 100) / 100;
-
+        
         UChat.chat("§9------------------------------------------");
         UChat.chat(getFormattedRank(star) + " " + Player);
         UChat.chat("FKDR: " + fkdr);
@@ -313,7 +313,27 @@ public class BedwarsStatsCommand {
         THUNDER("§e[_§f__§8_§l⚝§8]"),
         EARTH("§a[_§2__§6_§l⚝§e]"),
         WATER("§b[_§3__§9_§l⚝§1]"),
-        FIRE("§e[_§6__§c_§l⚝§4]");
+        FIRE("§e[_§6__§c_§l⚝§4]"),
+        THREEONE("§9[_§3__§60✥§e]"),
+        THREETWO("§c[§4_§7__§4_§c✥]"),
+        THREETHREE("§9[__§d_§6_✥§d]"),
+        THREEFOUR("§2[_§d__§5_✥§2]"),
+        THREEFIVE("§c[_§4__§2_§a✥]"),
+        THREESIX("§a[__§b_§9_✥§1]"),
+        THREESEVEN("§4[_§c__§b_§3✥]"),
+        THREEEIGHT("§1[_§9_§5__§d✥§1]"),
+        THREENINE("§c[_§a__§3_§9✥]"),
+        FOURZERO("§5[_§c__§6_✥§e]"),
+        FOURONE("§e[_§6_§c_§d_✥§5]"),
+        FOURTWO("§1[§9_§3_§b_§f_§7✥]"),
+        FOURTHREE("§0[§5_§8__§5_✥§0]"),
+        FOURFOUR("§2[_§a_§e_§6_§5✥§d]"),
+        FOURFIVE("§f[_§b__§3_✥]"),
+        FOURSIX("§3[§b_§e__§6_§d✥§5]"),
+        FOURSEVEN("§f[§4_§c__§9_§1✥§9]"),
+        FOUREIGHT("§5[_§c_§6_§e_§b✥§3]"),
+        FOURNINE("§2[§a_§f__§a_✥§2]"),
+        FIVEZERO("§4[_§5_§9__§1✥§0]");
 
         private final String format;
 
@@ -327,9 +347,6 @@ public class BedwarsStatsCommand {
     }
 
     public String getFormattedRank(int star) {
-        if(star > 3000) {
-            return "§f[" + star + "✫]";
-        }
         Rank rank = getRankForNumber(star);
         String starString = String.valueOf(star);
         StringBuilder txt = new StringBuilder(rank.getFormat());
@@ -377,6 +394,26 @@ public class BedwarsStatsCommand {
         else if (number < 2900) return Rank.EARTH;
         else if (number < 3000) return Rank.WATER;
         else if (number < 3100) return Rank.FIRE;
+        else if (number < 3200) return Rank.THREEONE;
+        else if (number < 3300) return Rank.THREETWO;
+        else if (number < 3400) return Rank.THREETHREE;
+        else if (number < 3500) return Rank.THREEFOUR;
+        else if (number < 3600) return Rank.THREEFIVE;
+        else if (number < 3700) return Rank.THREESIX;
+        else if (number < 3800) return Rank.THREESEVEN;
+        else if (number < 3900) return Rank.THREEEIGHT;
+        else if (number < 4000) return Rank.THREENINE;
+        else if (number < 4100) return Rank.FOURZERO;
+        else if (number < 4200) return Rank.FOURONE;
+        else if (number < 4300) return Rank.FOURTWO;
+        else if (number < 4400) return Rank.FOURTHREE;
+        else if (number < 4500) return Rank.FOURFOUR;
+        else if (number < 4600) return Rank.FOURFIVE;
+        else if (number < 4700) return Rank.FOURSIX;
+        else if (number < 4800) return Rank.FOURSEVEN;
+        else if (number < 4900) return Rank.FOUREIGHT;
+        else if (number < 5000) return Rank.FOURNINE;
+        else if (number < 5100) return Rank.FIVEZERO;
         return Rank.RAINBOW;
     }
 }
