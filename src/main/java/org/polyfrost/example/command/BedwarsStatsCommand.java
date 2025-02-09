@@ -200,24 +200,27 @@ public class BedwarsStatsCommand {
             Player = "§7" + Player;
         }
 
-        int star, fk, bb, w;
+        int star, fk, bb, w, l, fd, bl;
         double fkdr, wlr, bblr;
 
         star = getValue(ach, "bedwars_level");
-
         fk = getValue(bw, "final_kills_bedwars");
-
         bb = getValue(bw, "beds_broken_bedwars");
-
         w = getValue(bw, "wins_bedwars");
+        fd = getValue(bw, "final_deaths_bedwars");
+        l = getValue(bw, "losses_bedwars");
+        bl = getValue(bw, "beds_lost_bedwars");
 
-        fkdr = (double) fk / (double) getValue(bw, "final_deaths_bedwars");
+        if (fd != 0) fkdr = (double) fk / (double) fd;
+        else fkdr = fk;
         fkdr = (double) Math.round(fkdr * 100) / 100;
 
-        wlr = (double) w / (double) getValue(bw, "losses_bedwars");
+        if (l != 0) wlr = (double) w / (double) l;
+        else wlr = w;
         wlr = (double) Math.round(wlr * 100) / 100;
 
-        bblr = (double) bb / (double) getValue(bw, "beds_lost_bedwars");
+        if (bl != 0) bblr = (double) bb / (double) bl;
+        else bblr = bb;
         bblr = (double) Math.round(bblr * 100) / 100;
         
         UChat.chat("§9------------------------------------------");
@@ -235,6 +238,7 @@ public class BedwarsStatsCommand {
         try {
             return type.get(member).getAsInt();
         } catch (NullPointerException er) {
+            UChat.chat("No stats!");
             return 0;
         }
     }
