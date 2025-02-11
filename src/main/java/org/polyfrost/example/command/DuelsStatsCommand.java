@@ -207,14 +207,15 @@ public class DuelsStatsCommand {
             Player = "§7" + Player;
         }
 
-        int wins, kills, exp, losses, deaths;
+        int wins, kills, exp, losses, deaths, cws, bws;
         double wlr, kdr;
         String level;
 
         exp = getValue(profile, "networkExp");
-
         level = levelColor(String.valueOf((double) Math.round(getExactLevel(exp) * 100) / 100));
 
+        cws = getValue(d, "current_winstreak");
+        bws = getValue(d, "best_overall_winstreak");
         wins = getValue(d, "wins");
         kills = getValue(d, "kills");
         deaths = getValue(d, "deaths");
@@ -235,6 +236,8 @@ public class DuelsStatsCommand {
         UChat.chat("Wins: " + wins);
         UChat.chat("KDR: " + kdr);
         UChat.chat("Kills: " + kills);
+        if(cws != -1) UChat.chat("Current Winstreak: " + cws);
+        if(bws != -1)UChat.chat("Best Winstreak: " + bws);
         UChat.chat("§9------------------------------------------");
     }
 
@@ -256,6 +259,7 @@ public class DuelsStatsCommand {
         try {
             return type.get(member).getAsInt();
         } catch (NullPointerException er) {
+            if (member.equals("current_winstreak") || member.equals("best_overall_winstreak")) return -1;
             return 0;
         }
     }
