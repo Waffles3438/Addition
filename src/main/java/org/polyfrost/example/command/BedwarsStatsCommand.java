@@ -205,7 +205,7 @@ public class BedwarsStatsCommand {
             Player = "§7" + Player;
         }
 
-        int star, fk, bb, w, l, fd, bl;
+        int star, fk, bb, w, l, fd, bl, ws;
         double fkdr, wlr, bblr;
 
         star = getValue(ach, "bedwars_level");
@@ -215,6 +215,7 @@ public class BedwarsStatsCommand {
         fd = getValue(bw, "final_deaths_bedwars");
         l = getValue(bw, "losses_bedwars");
         bl = getValue(bw, "beds_lost_bedwars");
+        ws = getValue(bw, "winstreak");
 
         if (fd != 0) fkdr = (double) fk / (double) fd;
         else fkdr = fk;
@@ -236,6 +237,7 @@ public class BedwarsStatsCommand {
         UChat.chat("Wins: " + w);
         UChat.chat("BBLR: " + bblr);
         UChat.chat("Beds: " + bb);
+        if(ws != -1) UChat.chat("Winstreak: " + ws);
         UChat.chat("§9------------------------------------------");
     }
 
@@ -243,6 +245,7 @@ public class BedwarsStatsCommand {
         try {
             return type.get(member).getAsInt();
         } catch (NullPointerException er) {
+            if (member.equals("winstreak")) return -1;
             return 0;
         }
     }
