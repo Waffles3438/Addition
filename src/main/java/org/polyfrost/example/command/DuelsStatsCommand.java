@@ -86,7 +86,8 @@ public class DuelsStatsCommand {
         } else if (special.equals("YOUTUBER")) {
             Player = "§c[§fYOUTUBE§c] " + Player;
         } else if (special.equals("ADMIN")) {
-            if(getString(profile, "prefix").equals("§c[OWNER]")) {
+            String admin = getString(profile, "prefix");
+            if(admin != null && admin.equals("§c[OWNER]")) {
                 Player = "§c[OWNER] " + Player;
             } else {
                 Player = "§c[ADMIN] " + Player;
@@ -236,8 +237,10 @@ public class DuelsStatsCommand {
         UChat.chat("Wins: " + wins);
         UChat.chat("KDR: " + kdr);
         UChat.chat("Kills: " + kills);
-        if(cws != -1) UChat.chat("Current Winstreak: " + cws);
-        if(bws != -1)UChat.chat("Best Winstreak: " + bws);
+        if(cws != -1) {
+            UChat.chat("Current Winstreak: " + cws);
+            UChat.chat("Best Winstreak: " + bws);
+        }
         UChat.chat("§9------------------------------------------");
     }
 
