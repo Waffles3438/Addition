@@ -84,7 +84,8 @@ public class BedwarsStatsCommand {
         } else if (special.equals("YOUTUBER")) {
             Player = "§c[§fYOUTUBE§c] " + Player;
         } else if (special.equals("ADMIN")) {
-            if(getString(profile, "prefix").equals("§c[OWNER]")) {
+            String admin = getString(profile, "prefix");
+            if(admin != null && admin.equals("§c[OWNER]")) {
                 Player = "§c[OWNER] " + Player;
             } else {
                 Player = "§c[ADMIN] " + Player;
