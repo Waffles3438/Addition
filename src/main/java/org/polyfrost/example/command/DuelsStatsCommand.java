@@ -111,7 +111,7 @@ public class DuelsStatsCommand {
 
     private void getStats(String Player) {
         if(!Addition.duelsStatsList.containsKey(Player)) {
-            UChat.chat("Invalid API key");
+            UChat.chat(Player + " is not cached");
             return;
         }
         rank = null;
@@ -137,7 +137,6 @@ public class DuelsStatsCommand {
         Duelswins = duelsStats.getDuelsWins();
         Duelswlr = duelsStats.getDuelsWLR();
         Level = duelsStats.getLevel();
-        UChat.chat("Cached stats!");
         UChat.chat("§9------------------------------------------");
         UChat.chat(getPlayerDivision(Duelswins) + formatWithoutRequestRank(Username));
         UChat.chat("Level: " + Level);
@@ -145,7 +144,7 @@ public class DuelsStatsCommand {
         UChat.chat("Wins: " + Duelswins);
         UChat.chat("KDR: " + Duelskdr);
         UChat.chat("Kills: " + Duelskills);
-        if(Duelscws != -1) {
+        if(Duelscws != -1 && Duelsbws != -1) {
             UChat.chat("Current Winstreak: " + Duelscws);
             UChat.chat("Best Winstreak: " + Duelsbws);
         }
@@ -153,6 +152,15 @@ public class DuelsStatsCommand {
     }
 
     private void requestStats(String player){
+        try {
+            profile = getStringAsJson(connection).getAsJsonObject("player");
+            d = profile.getAsJsonObject("stats").getAsJsonObject("Duels");
+            ach = profile.getAsJsonObject("achievements");
+        } catch (NullPointerException er) {
+            // never played bedwars or joined lobby
+            UChat.chat(Username + " has never played Duels");
+            return;
+        }
 
         // Duels
         exp = getValue(profile, "networkExp");
@@ -174,6 +182,12 @@ public class DuelsStatsCommand {
         Duelskdr = (double) Math.round(Duelskdr * 100) / 100;
 
         // Bedwars
+
+        try {
+            bw = profile.getAsJsonObject("stats").getAsJsonObject("Bedwars");
+        } catch (NullPointerException e) {
+
+        }
 
         Bedwarsstar = getValue(ach, "bedwars_level");
         Bedwarsfk = getValue(bw, "final_kills_bedwars");
@@ -203,16 +217,17 @@ public class DuelsStatsCommand {
         UChat.chat("Wins: " + Duelswins);
         UChat.chat("KDR: " + Duelskdr);
         UChat.chat("Kills: " + Duelskills);
-        if(Duelscws != -1) {
+        if(Duelscws != -1 && Duelsbws != -1) {
             UChat.chat("Current Winstreak: " + Duelscws);
             UChat.chat("Best Winstreak: " + Duelsbws);
         }
         UChat.chat("§9------------------------------------------");
         if(Addition.duelsStatsList.containsKey(Username)) Addition.duelsStatsList.remove(Username);
-        if(Addition.bedwarsStatsList.containsKey(Username) && Bedwarsl != 0 && Bedwarsw != 0 && Bedwarsfd !=0) Addition.bedwarsStatsList.remove(Username);
-        if(Addition.playerRanks.containsKey(Username)) Addition.playerRanks.remove(Username);
-        if(Bedwarsl != 0 && Bedwarsw != 0 && Bedwarsfd !=0) Addition.bedwarsStatsList.put(Username, new Bedwars(Bedwarsstar, Bedwarsfk, Bedwarsbb, Bedwarsw, Bedwarsl, Bedwarsfd, Bedwarsbl, Bedwarsws, Bedwarsfkdr, Bedwarswlr, Bedwarsbblr));
+        if(Addition.bedwarsStatsList.containsKey(Username) && (Bedwarsl != 0 || Bedwarsw != 0)) Addition.bedwarsStatsList.remove(Username);
+        if(Bedwarsl != 0 || Bedwarsw != 0) Addition.bedwarsStatsList.put(Username, new Bedwars(Bedwarsstar, Bedwarsfk, Bedwarsbb, Bedwarsw, Bedwarsl, Bedwarsfd, Bedwarsbl, Bedwarsws, Bedwarsfkdr, Bedwarswlr, Bedwarsbblr));
         Addition.duelsStatsList.put(Username, new Duels(Duelskills, Duelsdeaths, Duelswins, Duelslosses, Duelscws, Duelsbws, Duelswlr, Duelskdr, Level));
+        if (Addition.playerRanks.containsKey(Username)) Addition.playerRanks.remove(Username);
+        if(Addition.playerRanks.containsKey(Username)) Addition.playerRanks.remove(Username);
         Addition.playerRanks.put(Username, new Ranks(rank, special, monthly, MVPPlusPlusCheck, plusColor, admin));
     }
 
@@ -221,12 +236,13 @@ public class DuelsStatsCommand {
         if(lvl < 35) return "§c" + level;
         else if(lvl < 45) return "§6" + level;
         else if(lvl < 55) return "§a" + level;
-        else if(lvl < 65) return "§d" + level;
-        else if(lvl < 75) return "§f" + level;
-        else if(lvl < 85) return "§9" + level;
-        else if(lvl < 95) return "§2" + level;
-        else if(lvl < 150) return "§4" + level;
-        else if(lvl < 200) return "§5" + level;
+        else if(lvl < 65) return "§e" + level;
+        else if(lvl < 75) return "§d" + level;
+        else if(lvl < 85) return "§f" + level;
+        else if(lvl < 95) return "§9" + level;
+        else if(lvl < 150) return "§2" + level;
+        else if(lvl < 200) return "§4" + level;
+        else if(lvl < 250) return "§5" + level;
         else return "§0" + level;
     }
 
@@ -500,7 +516,6 @@ public class DuelsStatsCommand {
         } else {
             Player = "§7" + Username;
         }
-        UChat.chat("Working: " + rank + " " + special + " " + monthly + " " + MVPPlusPlusCheck + " " + plusColor + " " + admin);
         return Player;
     }
 

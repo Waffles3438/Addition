@@ -13,9 +13,8 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import org.polyfrost.example.mixin.EntityLivingBaseAccessor;
 import org.polyfrost.example.util.Bedwars;
 import org.polyfrost.example.util.Duels;
+import org.polyfrost.example.util.EldestRemovalMap;
 import org.polyfrost.example.util.Ranks;
-
-import java.util.HashMap;
 
 @Mod(modid = Addition.MODID, name = Addition.NAME, version = Addition.VERSION)
 public class Addition {
@@ -24,9 +23,10 @@ public class Addition {
     public static final String NAME = "@NAME@";
     public static final String VERSION = "@VER@";
     public static ModConfig config;
-    public static HashMap<String, Duels> duelsStatsList = new HashMap<>();
-    public static HashMap<String, Bedwars> bedwarsStatsList = new HashMap<>();
-    public static HashMap<String, Ranks> playerRanks = new HashMap<>();
+    public static int maxSize = 16;
+    public static EldestRemovalMap<String, Duels> duelsStatsList = new EldestRemovalMap<>(maxSize);
+    public static EldestRemovalMap<String, Bedwars> bedwarsStatsList = new EldestRemovalMap<>(maxSize);
+    public static EldestRemovalMap<String, Ranks> playerRanks = new EldestRemovalMap<>(maxSize);
 
     @Mod.EventHandler
     public void onInit(FMLInitializationEvent event) {

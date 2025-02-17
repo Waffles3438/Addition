@@ -106,7 +106,7 @@ public class BedwarsStatsCommand {
 
     private void getStats(String Player) {
         if (!Addition.bedwarsStatsList.containsKey(Player)) {
-            UChat.chat("Invalid API key");
+            UChat.chat(Player + " is not cached");
             return;
         }
         rank = null;
@@ -134,7 +134,6 @@ public class BedwarsStatsCommand {
         Bedwarsfkdr = bedwarsStats.getBedwarsFKDR();
         Bedwarswlr = bedwarsStats.getBedwarsWLR();
         Bedwarsbblr = bedwarsStats.getBedwarsBBLR();
-        UChat.chat("Cached stats!");
         UChat.chat("§9------------------------------------------");
         UChat.chat(getFormattedRank(Bedwarsstar) + " " + formatWithoutRequestRank(Username));
         UChat.chat("FKDR: " + Bedwarsfkdr);
@@ -148,29 +147,9 @@ public class BedwarsStatsCommand {
     }
 
     private void requestStats(String player){
-
-        try {
-            uuid = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("id").getAsString();
-            Username = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("name").getAsString();
-        } catch (Exception e) {
-            UChat.chat("Invalid player");
-            return;
-        }
-
-        connection = newConnection("https://api.hypixel.net/player?key=" + ModConfig.api + "&uuid=" + uuid);
-        if (connection.isEmpty()) {
-            UChat.chat("Invalid API key");
-            return;
-        }
-        if (connection.equals("{\"success\":true,\"player\":null}")) {
-            // player is nicked
-            UChat.chat("Player has never logged on Hypixel");
-            return;
-        }
         try {
             profile = getStringAsJson(connection).getAsJsonObject("player");
             bw = profile.getAsJsonObject("stats").getAsJsonObject("Bedwars");
-            d = profile.getAsJsonObject("stats").getAsJsonObject("Duels");
             ach = profile.getAsJsonObject("achievements");
         } catch (NullPointerException er) {
             // never played bedwars or joined lobby
@@ -179,6 +158,12 @@ public class BedwarsStatsCommand {
         }
 
         // Duels
+        try {
+            d = profile.getAsJsonObject("stats").getAsJsonObject("Duels");
+        } catch (NullPointerException e) {
+
+        }
+
         exp = getValue(profile, "networkExp");
         Level = levelColor(String.valueOf((double) Math.round(getExactLevel(exp) * 100) / 100));
 
@@ -230,10 +215,10 @@ public class BedwarsStatsCommand {
         if(Bedwarsws != -1) UChat.chat("Winstreak: " + Bedwarsws);
         UChat.chat("§9------------------------------------------");
         if(Addition.bedwarsStatsList.containsKey(Username)) Addition.bedwarsStatsList.remove(Username);
-        if(Addition.duelsStatsList.containsKey(Username) && Duelslosses != 0 && Duelswins != 0 && Duelsdeaths != 0) Addition.duelsStatsList.remove(Username);
+        if(Addition.duelsStatsList.containsKey(Username) && (Duelslosses != 0 || Duelswins != 0)) Addition.duelsStatsList.remove(Username);
+        if (Duelslosses != 0 || Duelswins != 0) Addition.duelsStatsList.put(Username, new Duels(Duelskills, Duelsdeaths, Duelswins, Duelslosses, Duelscws, Duelsbws, Duelswlr, Duelskdr, Level));
         Addition.bedwarsStatsList.put(Username, new Bedwars(Bedwarsstar, Bedwarsfk, Bedwarsbb, Bedwarsw, Bedwarsl, Bedwarsfd, Bedwarsbl, Bedwarsws, Bedwarsfkdr, Bedwarswlr, Bedwarsbblr));
-        if(Duelslosses != 0 && Duelswins != 0 && Duelsdeaths != 0) Addition.duelsStatsList.put(Username, new Duels(Duelskills, Duelsdeaths, Duelswins, Duelslosses, Duelscws, Duelsbws, Duelswlr, Duelskdr, Level));
-        UChat.chat("Special: " + special);
+        if (Addition.playerRanks.containsKey(Username)) Addition.playerRanks.remove(Username);
         Addition.playerRanks.put(Username, new Ranks(rank, special, monthly, MVPPlusPlusCheck, plusColor, admin));
     }
 
@@ -732,12 +717,13 @@ public class BedwarsStatsCommand {
         if(lvl < 35) return "§c" + level;
         else if(lvl < 45) return "§6" + level;
         else if(lvl < 55) return "§a" + level;
-        else if(lvl < 65) return "§d" + level;
-        else if(lvl < 75) return "§f" + level;
-        else if(lvl < 85) return "§9" + level;
-        else if(lvl < 95) return "§2" + level;
-        else if(lvl < 150) return "§4" + level;
-        else if(lvl < 200) return "§5" + level;
+        else if(lvl < 65) return "§e" + level;
+        else if(lvl < 75) return "§d" + level;
+        else if(lvl < 85) return "§f" + level;
+        else if(lvl < 95) return "§9" + level;
+        else if(lvl < 150) return "§2" + level;
+        else if(lvl < 200) return "§4" + level;
+        else if(lvl < 250) return "§5" + level;
         else return "§0" + level;
     }
 }
