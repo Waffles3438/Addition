@@ -8,7 +8,11 @@ import cc.polyfrost.oneconfig.utils.commands.annotations.Greedy;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.polyfrost.example.Addition;
 import org.polyfrost.example.config.ModConfig;
+import org.polyfrost.example.util.Bedwars;
+import org.polyfrost.example.util.Duels;
+import org.polyfrost.example.util.Ranks;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -19,6 +23,18 @@ import java.net.URL;
 @Command(value = "bw")
 public class BedwarsStatsCommand {
 
+    private String uuid, connection, Username;
+    private JsonObject profile, ach, d, bw;
+
+    // Bedwars
+    private int Bedwarsstar, Bedwarsfk, Bedwarsbb, Bedwarsw, Bedwarsl, Bedwarsfd, Bedwarsbl, Bedwarsws;
+    private double Bedwarsfkdr, Bedwarswlr, Bedwarsbblr;
+
+    // Duels
+    private int Duelswins, Duelskills, exp, Duelslosses, Duelsdeaths, Duelscws, Duelsbws;
+    private double Duelswlr, Duelskdr;
+    private String Level;
+
     @Main
     private void main(@Greedy String player) {
         if(player.isEmpty()) {
@@ -27,23 +43,120 @@ public class BedwarsStatsCommand {
         }
 
         Multithreading.runAsync(() -> {
-            printStats(player);
+            Boolean request = true;
+            try {
+                uuid = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("id").getAsString();
+                Username = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("name").getAsString();
+            } catch (Exception e) {
+                UChat.chat("Invalid player");
+                return;
+            }
+
+            connection = newConnection("https://api.hypixel.net/player?key=" + ModConfig.api + "&uuid=" + uuid);
+            if (connection.isEmpty()) {
+                request = false;
+            }
+
+            if(request) {
+                if (connection.equals("{\"success\":true,\"player\":null}")) {
+                    // player is nicked
+                    UChat.chat(Username + " has never logged on Hypixel");
+                    return;
+                }
+
+                try {
+                    profile = getStringAsJson(connection).getAsJsonObject("player");
+                    d = profile.getAsJsonObject("stats").getAsJsonObject("Bedwars");
+                    ach = profile.getAsJsonObject("achievements");
+                } catch (NullPointerException er) {
+                    // never played bedwars or joined lobby
+                    UChat.chat(Username + " has never played Bedwars");
+                    try {
+                        profile = getStringAsJson(connection).getAsJsonObject("player");
+                        d = profile.getAsJsonObject("stats").getAsJsonObject("Duels");
+                        ach = profile.getAsJsonObject("achievements");
+                        exp = getValue(profile, "networkExp");
+                        Level = levelColor(String.valueOf((double) Math.round(getExactLevel(exp) * 100) / 100));
+
+                        Duelscws = getValue(d, "current_winstreak");
+                        Duelsbws = getValue(d, "best_overall_winstreak");
+                        Duelswins = getValue(d, "wins");
+                        Duelskills = getValue(d, "kills");
+                        Duelsdeaths = getValue(d, "deaths");
+                        Duelslosses = getValue(d, "losses");
+
+                        if (Duelslosses != 0) Duelswlr = (double) Duelswins / (double) Duelslosses;
+                        else Duelswlr = Duelswins;
+                        Duelswlr = (double) Math.round(Duelswlr * 100) / 100;
+
+                        if (Duelsdeaths != 0) Duelskdr = (double) Duelskills / (double) Duelsdeaths;
+                        else Duelskdr = Duelskills;
+                        Duelskdr = (double) Math.round(Duelskdr * 100) / 100;
+
+                        if(Duelswins != 0 && Duelslosses != 0) Addition.duelsStatsList.put(Username, new Duels(Duelskills, Duelsdeaths, Duelswins, Duelslosses, Duelscws, Duelsbws, Duelswlr, Duelskdr, Level));
+                    } catch (NullPointerException err) {
+                        // never played duels or joined lobby
+                    }
+                    return;
+                }
+                requestStats(player);
+            } else getStats(Username);
         });
     }
 
-    private void printStats(String player){
+    private void getStats(String Player) {
+        if (!Addition.bedwarsStatsList.containsKey(Player)) {
+            UChat.chat("Invalid API key");
+            return;
+        }
+        rank = null;
+        special = null;
+        monthly = null;
+        MVPPlusPlusCheck = null;
+        plusColor = null;
+        admin = null;
+        Ranks rankStuff = Addition.playerRanks.get(Player);
+        rank = rankStuff.getRank();
+        special = rankStuff.getSpecial();
+        monthly = rankStuff.getMonthly();
+        MVPPlusPlusCheck = rankStuff.getMVPPlusPlusCheck();
+        plusColor = rankStuff.getplusColor();
+        admin = rankStuff.getAdmin();
+        Bedwars bedwarsStats = Addition.bedwarsStatsList.get(Player);
+        Bedwarsstar = bedwarsStats.getBedwarsStar();
+        Bedwarsfk = bedwarsStats.getBedwarsFinalKills();
+        Bedwarsbb = bedwarsStats.getBedwarsBedBreaks();
+        Bedwarsw = bedwarsStats.getBedwarsWins();
+        Bedwarsl = bedwarsStats.getBedwarsLosses();
+        Bedwarsfd = bedwarsStats.getBedwarsFinalDeaths();
+        Bedwarsbl = bedwarsStats.getBedwarsBedsLost();
+        Bedwarsws = bedwarsStats.getBedwarsWinStreak();
+        Bedwarsfkdr = bedwarsStats.getBedwarsFKDR();
+        Bedwarswlr = bedwarsStats.getBedwarsWLR();
+        Bedwarsbblr = bedwarsStats.getBedwarsBBLR();
+        UChat.chat("Cached stats!");
+        UChat.chat("§9------------------------------------------");
+        UChat.chat(getFormattedRank(Bedwarsstar) + " " + formatWithoutRequestRank(Username));
+        UChat.chat("FKDR: " + Bedwarsfkdr);
+        UChat.chat("Final kills: " + Bedwarsfk);
+        UChat.chat("WLR: " + Bedwarswlr);
+        UChat.chat("Wins: " + Bedwarsw);
+        UChat.chat("BBLR: " + Bedwarsbblr);
+        UChat.chat("Beds: " + Bedwarsbb);
+        if(Bedwarsws != -1) UChat.chat("Winstreak: " + Bedwarsws);
+        UChat.chat("§9------------------------------------------");
+    }
 
-        String uuid, connection, Player;
+    private void requestStats(String player){
 
         try {
             uuid = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("id").getAsString();
-            Player = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("name").getAsString();
+            Username = NetworkUtils.getJsonElement("https://api.mojang.com/users/profiles/minecraft/" + player).getAsJsonObject().get("name").getAsString();
         } catch (Exception e) {
             UChat.chat("Invalid player");
             return;
         }
 
-        JsonObject profile, ach, bw;
         connection = newConnection("https://api.hypixel.net/player?key=" + ModConfig.api + "&uuid=" + uuid);
         if (connection.isEmpty()) {
             UChat.chat("Invalid API key");
@@ -57,6 +170,7 @@ public class BedwarsStatsCommand {
         try {
             profile = getStringAsJson(connection).getAsJsonObject("player");
             bw = profile.getAsJsonObject("stats").getAsJsonObject("Bedwars");
+            d = profile.getAsJsonObject("stats").getAsJsonObject("Duels");
             ach = profile.getAsJsonObject("achievements");
         } catch (NullPointerException er) {
             // never played bedwars or joined lobby
@@ -64,36 +178,90 @@ public class BedwarsStatsCommand {
             return;
         }
 
-        String rank;
-        if(getString(profile, "newPackageRank") != null) {
-            rank = getString(profile, "newPackageRank");
-        } else {
-            rank = "non";
+        // Duels
+        exp = getValue(profile, "networkExp");
+        Level = levelColor(String.valueOf((double) Math.round(getExactLevel(exp) * 100) / 100));
+
+        Duelscws = getValue(d, "current_winstreak");
+        Duelsbws = getValue(d, "best_overall_winstreak");
+        Duelswins = getValue(d, "wins");
+        Duelskills = getValue(d, "kills");
+        Duelsdeaths = getValue(d, "deaths");
+        Duelslosses = getValue(d, "losses");
+
+        if (Duelslosses != 0) Duelswlr = (double) Duelswins / (double) Duelslosses;
+        else Duelswlr = Duelswins;
+        Duelswlr = (double) Math.round(Duelswlr * 100) / 100;
+
+        if (Duelsdeaths != 0) Duelskdr = (double) Duelskills / (double) Duelsdeaths;
+        else Duelskdr = Duelskills;
+        Duelskdr = (double) Math.round(Duelskdr * 100) / 100;
+
+        // Bedwars
+        Bedwarsstar = getValue(ach, "bedwars_level");
+        Bedwarsfk = getValue(bw, "final_kills_bedwars");
+        Bedwarsbb = getValue(bw, "beds_broken_bedwars");
+        Bedwarsw = getValue(bw, "wins_bedwars");
+        Bedwarsfd = getValue(bw, "final_deaths_bedwars");
+        Bedwarsl = getValue(bw, "losses_bedwars");
+        Bedwarsbl = getValue(bw, "beds_lost_bedwars");
+        Bedwarsws = getValue(bw, "winstreak");
+
+        if (Bedwarsfd != 0) Bedwarsfkdr = (double) Bedwarsfk / (double) Bedwarsfd;
+        else Bedwarsfkdr = Bedwarsfk;
+        Bedwarsfkdr = (double) Math.round(Bedwarsfkdr * 100) / 100;
+
+        if (Bedwarsl != 0) Bedwarswlr = (double) Bedwarsw / (double) Bedwarsl;
+        else Bedwarswlr = Bedwarsw;
+        Bedwarswlr = (double) Math.round(Bedwarswlr * 100) / 100;
+
+        if (Bedwarsbl != 0) Bedwarsbblr = (double) Bedwarsbb / (double) Bedwarsbl;
+        else Bedwarsbblr = Bedwarsbb;
+        Bedwarsbblr = (double) Math.round(Bedwarsbblr * 100) / 100;
+
+        UChat.chat("§9------------------------------------------");
+        UChat.chat(getFormattedRank(Bedwarsstar) + " " + formatRank(profile, Username));
+        UChat.chat("FKDR: " + Bedwarsfkdr);
+        UChat.chat("Final kills: " + Bedwarsfk);
+        UChat.chat("WLR: " + Bedwarswlr);
+        UChat.chat("Wins: " + Bedwarsw);
+        UChat.chat("BBLR: " + Bedwarsbblr);
+        UChat.chat("Beds: " + Bedwarsbb);
+        if(Bedwarsws != -1) UChat.chat("Winstreak: " + Bedwarsws);
+        UChat.chat("§9------------------------------------------");
+        if(Addition.bedwarsStatsList.containsKey(Username)) Addition.bedwarsStatsList.remove(Username);
+        if(Addition.duelsStatsList.containsKey(Username) && Duelslosses != 0 && Duelswins != 0 && Duelsdeaths != 0) Addition.duelsStatsList.remove(Username);
+        Addition.bedwarsStatsList.put(Username, new Bedwars(Bedwarsstar, Bedwarsfk, Bedwarsbb, Bedwarsw, Bedwarsl, Bedwarsfd, Bedwarsbl, Bedwarsws, Bedwarsfkdr, Bedwarswlr, Bedwarsbblr));
+        if(Duelslosses != 0 && Duelswins != 0 && Duelsdeaths != 0) Addition.duelsStatsList.put(Username, new Duels(Duelskills, Duelsdeaths, Duelswins, Duelslosses, Duelscws, Duelsbws, Duelswlr, Duelskdr, Level));
+        UChat.chat("Special: " + special);
+        Addition.playerRanks.put(Username, new Ranks(rank, special, monthly, MVPPlusPlusCheck, plusColor, admin));
+    }
+
+    private int getValue(JsonObject type, String member) {
+        try {
+            return type.get(member).getAsInt();
+        } catch (NullPointerException er) {
+            if (member.equals("winstreak") || member.equals("current_winstreak") || member.equals("best_overall_winstreak")) return -1;
+            return 0;
         }
+    }
 
-        String special = "nothing";
-        if(getString(profile, "rank") != null){
-            special = getString(profile, "rank");
-        }
+    private String rank, special, monthly, MVPPlusPlusCheck, plusColor, admin;
 
-        String monthly = getString(profile, "monthlyRankColor");
-        String MVPPlusPlusCheck = getString(profile, "monthlyPackageRank");
-
+    private String formatWithoutRequestRank(String Player) {
         if(Player.equals("Technoblade")) {
-            Player = "§d[PIG§b+++§d] " + Player;
+            Player = "§d[PIG§b+++§d] " + Username;
         } else if (special.equals("YOUTUBER")) {
-            Player = "§c[§fYOUTUBE§c] " + Player;
+            Player = "§c[§fYOUTUBE§c] " + Username;
         } else if (special.equals("ADMIN")) {
-            String admin = getString(profile, "prefix");
             if(admin != null && admin.equals("§c[OWNER]")) {
-                Player = "§c[OWNER] " + Player;
+                Player = "§c[OWNER] " + Username;
             } else {
-                Player = "§c[ADMIN] " + Player;
+                Player = "§c[ADMIN] " + Username;
             }
         } else if (special.equals("GAME_MASTER")) {
-            Player = "§2[GM] " + Player;
+            Player = "§2[GM] " + Username;
         } else if (monthly != null && MVPPlusPlusCheck != null && rank.equals("MVP_PLUS") && monthly.equals("GOLD") && MVPPlusPlusCheck.equals("SUPERSTAR")) { // Gold MVP++ check
-            String plusColor = getString(profile, "rankPlusColor");
             String color = "§c";
             if (plusColor != null) {
                 switch (plusColor) {
@@ -141,9 +309,8 @@ public class BedwarsStatsCommand {
                         break;
                 }
             }
-            Player = "§6[MVP" + color + "++" + "§6] " + Player;
+            Player = "§6[MVP" + color + "++" + "§6] " + Username;
         } else if (rank.equals("MVP_PLUS"))  {
-            String plusColor = getString(profile, "rankPlusColor");
             String color = "§c";
             if (plusColor != null) {
                 switch (plusColor) {
@@ -192,63 +359,164 @@ public class BedwarsStatsCommand {
                 }
             }
             if(monthly != null && MVPPlusPlusCheck != null && monthly.equals("AQUA") && MVPPlusPlusCheck.equals("SUPERSTAR")) {
-                Player = "§b[MVP" + color + "++" + "§b] " + Player;
+                Player = "§b[MVP" + color + "++" + "§b] " + Username;
             } else {
-                Player = "§b[MVP" + color + "+" + "§b] " + Player;
+                Player = "§b[MVP" + color + "+" + "§b] " + Username;
             }
         } else if (rank.equals("MVP")) {
-            Player = "§b[MVP] " + Player;
+            Player = "§b[MVP] " + Username;
         } else if (rank.equals("VIP_PLUS")) {
-            Player = "§a[VIP§6+§a] " + Player;
+            Player = "§a[VIP§6+§a] " + Username;
         } else if (rank.equals("VIP")) {
-            Player = "§a[VIP] " + Player;
+            Player = "§a[VIP] " + Username;
         } else {
-            Player = "§7" + Player;
+            Player = "§7" + Username;
         }
-
-        int star, fk, bb, w, l, fd, bl, ws;
-        double fkdr, wlr, bblr;
-
-        star = getValue(ach, "bedwars_level");
-        fk = getValue(bw, "final_kills_bedwars");
-        bb = getValue(bw, "beds_broken_bedwars");
-        w = getValue(bw, "wins_bedwars");
-        fd = getValue(bw, "final_deaths_bedwars");
-        l = getValue(bw, "losses_bedwars");
-        bl = getValue(bw, "beds_lost_bedwars");
-        ws = getValue(bw, "winstreak");
-
-        if (fd != 0) fkdr = (double) fk / (double) fd;
-        else fkdr = fk;
-        fkdr = (double) Math.round(fkdr * 100) / 100;
-
-        if (l != 0) wlr = (double) w / (double) l;
-        else wlr = w;
-        wlr = (double) Math.round(wlr * 100) / 100;
-
-        if (bl != 0) bblr = (double) bb / (double) bl;
-        else bblr = bb;
-        bblr = (double) Math.round(bblr * 100) / 100;
-
-        UChat.chat("§9------------------------------------------");
-        UChat.chat(getFormattedRank(star) + " " + Player);
-        UChat.chat("FKDR: " + fkdr);
-        UChat.chat("Final kills: " + fk);
-        UChat.chat("WLR: " + wlr);
-        UChat.chat("Wins: " + w);
-        UChat.chat("BBLR: " + bblr);
-        UChat.chat("Beds: " + bb);
-        if(ws != -1) UChat.chat("Winstreak: " + ws);
-        UChat.chat("§9------------------------------------------");
+        return Player;
     }
 
-    private int getValue(JsonObject type, String member) {
-        try {
-            return type.get(member).getAsInt();
-        } catch (NullPointerException er) {
-            if (member.equals("winstreak")) return -1;
-            return 0;
+    private String formatRank(JsonObject profile,String Player) {
+        if(getString(profile, "newPackageRank") != null) {
+            rank = getString(profile, "newPackageRank");
+        } else {
+            rank = "non";
         }
+
+        special = "nothing";
+        if(getString(profile, "rank") != null){
+            special = getString(profile, "rank");
+        }
+
+        monthly = getString(profile, "monthlyRankColor");
+        MVPPlusPlusCheck = getString(profile, "monthlyPackageRank");
+
+        if(Player.equals("Technoblade")) {
+            Player = "§d[PIG§b+++§d] " + Username;
+        } else if (special.equals("YOUTUBER")) {
+            Player = "§c[§fYOUTUBE§c] " + Username;
+        } else if (special.equals("ADMIN")) {
+            String admin = getString(profile, "prefix");
+            if(admin != null && admin.equals("§c[OWNER]")) {
+                Player = "§c[OWNER] " + Username;
+            } else {
+                Player = "§c[ADMIN] " + Username;
+            }
+        } else if (special.equals("GAME_MASTER")) {
+            Player = "§2[GM] " + Username;
+        } else if (monthly != null && MVPPlusPlusCheck != null && rank.equals("MVP_PLUS") && monthly.equals("GOLD") && MVPPlusPlusCheck.equals("SUPERSTAR")) { // Gold MVP++ check
+            plusColor = getString(profile, "rankPlusColor");
+            String color = "§c";
+            if (plusColor != null) {
+                switch (plusColor) {
+                    case "RED":
+                        color = "§c";
+                        break;
+                    case "GOLD":
+                        color = "§6";
+                        break;
+                    case "GREEN":
+                        color = "§a";
+                        break;
+                    case "YELLOW":
+                        color = "§e";
+                        break;
+                    case "LIGHT_PURPLE":
+                        color = "§d";
+                        break;
+                    case "WHITE":
+                        color = "§f";
+                        break;
+                    case "BLUE":
+                        color = "§9";
+                        break;
+                    case "DARK_GREEN":
+                        color = "§2";
+                        break;
+                    case "DARK_RED":
+                        color = "§4";
+                        break;
+                    case "DARK_AQUA":
+                        color = "§3";
+                        break;
+                    case "DARK_PURPLE":
+                        color = "§5";
+                        break;
+                    case "GRAY":
+                        color = "§7";
+                        break;
+                    case "BLACK":
+                        color = "§0";
+                        break;
+                    case "DARK_BLUE":
+                        color = "§1";
+                        break;
+                }
+            }
+            Player = "§6[MVP" + color + "++" + "§6] " + Username;
+        } else if (rank.equals("MVP_PLUS"))  {
+            plusColor = getString(profile, "rankPlusColor");
+            String color = "§c";
+            if (plusColor != null) {
+                switch (plusColor) {
+                    case "RED":
+                        color = "§c";
+                        break;
+                    case "GOLD":
+                        color = "§6";
+                        break;
+                    case "GREEN":
+                        color = "§a";
+                        break;
+                    case "YELLOW":
+                        color = "§e";
+                        break;
+                    case "LIGHT_PURPLE":
+                        color = "§d";
+                        break;
+                    case "WHITE":
+                        color = "§f";
+                        break;
+                    case "BLUE":
+                        color = "§9";
+                        break;
+                    case "DARK_GREEN":
+                        color = "§2";
+                        break;
+                    case "DARK_RED":
+                        color = "§4";
+                        break;
+                    case "DARK_AQUA":
+                        color = "§3";
+                        break;
+                    case "DARK_PURPLE":
+                        color = "§5";
+                        break;
+                    case "GRAY":
+                        color = "§7";
+                        break;
+                    case "BLACK":
+                        color = "§0";
+                        break;
+                    case "DARK_BLUE":
+                        color = "§1";
+                        break;
+                }
+            }
+            if(monthly != null && MVPPlusPlusCheck != null && monthly.equals("AQUA") && MVPPlusPlusCheck.equals("SUPERSTAR")) {
+                Player = "§b[MVP" + color + "++" + "§b] " + Username;
+            } else {
+                Player = "§b[MVP" + color + "+" + "§b] " + Username;
+            }
+        } else if (rank.equals("MVP")) {
+            Player = "§b[MVP] " + Username;
+        } else if (rank.equals("VIP_PLUS")) {
+            Player = "§a[VIP§6+§a] " + Username;
+        } else if (rank.equals("VIP")) {
+            Player = "§a[VIP] " + Username;
+        } else {
+            Player = "§7" + Username;
+        }
+        return Player;
     }
 
     private String getString(JsonObject type, String member) {
@@ -427,5 +695,49 @@ public class BedwarsStatsCommand {
         else if (number < 5000) return Rank.FOURNINE;
         else if (number < 5100) return Rank.FIVEZERO;
         return Rank.RAINBOW;
+    }
+
+    private double BASE = 10_000;
+    private double GROWTH = 2_500;
+    private double HALF_GROWTH = 0.5 * GROWTH;
+    private double REVERSE_PQ_PREFIX = -(BASE - 0.5 * GROWTH) / GROWTH;
+    private double REVERSE_CONST = REVERSE_PQ_PREFIX * REVERSE_PQ_PREFIX;
+    private double GROWTH_DIVIDES_2 = 2 / GROWTH;
+
+    private double getLevel(double exp) {
+        return exp < 0 ? 1 : Math.floor(1 + REVERSE_PQ_PREFIX + Math.sqrt(REVERSE_CONST + GROWTH_DIVIDES_2 * exp));
+    }
+
+    private double getExactLevel(double exp) {
+        return getLevel(exp) + getPercentageToNextLevel(exp);
+    }
+
+    private double getTotalExpToFullLevel(double level) {
+        return (HALF_GROWTH * (level - 2) + BASE) * (level - 1);
+    }
+
+    private double getTotalExpToLevel(double level) {
+        double lv = Math.floor(level), x0 = getTotalExpToFullLevel(lv);
+        if (level == lv) return x0;
+        return (getTotalExpToFullLevel(lv + 1) - x0) * (level % 1) + x0;
+    }
+
+    private double getPercentageToNextLevel(double exp) {
+        double lv = getLevel(exp), x0 = getTotalExpToLevel(lv);
+        return (exp - x0) / (getTotalExpToLevel(lv + 1) - x0);
+    }
+
+    private String levelColor(String level) {
+        double lvl = Double.parseDouble(level);
+        if(lvl < 35) return "§c" + level;
+        else if(lvl < 45) return "§6" + level;
+        else if(lvl < 55) return "§a" + level;
+        else if(lvl < 65) return "§d" + level;
+        else if(lvl < 75) return "§f" + level;
+        else if(lvl < 85) return "§9" + level;
+        else if(lvl < 95) return "§2" + level;
+        else if(lvl < 150) return "§4" + level;
+        else if(lvl < 200) return "§5" + level;
+        else return "§0" + level;
     }
 }
