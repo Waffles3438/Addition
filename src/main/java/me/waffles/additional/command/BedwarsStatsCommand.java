@@ -8,6 +8,7 @@ import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.playerData.Bedwars;
 import me.waffles.additional.util.HypixelAPIUtils;
+import me.waffles.additional.util.ShmeadoAPIUtils;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
 
@@ -50,9 +51,15 @@ public class BedwarsStatsCommand {
 
         if (needProfile || needStats) {
             String stjson = fetchPlayerData(uuid);
+            boolean usedShmeadoFallback = false;
 
             if (stjson == null || stjson.isEmpty()) {
-                UChat.chat("§cSomething went wrong while fetching stats for " + Username + ". Please try again.");
+                stjson = ShmeadoAPIUtils.fetchPlayerStatsJson(Username);
+                usedShmeadoFallback = true;
+            }
+
+            if (stjson == null || stjson.isEmpty()) {
+                UChat.chat("Something went wrong while fetching stats for " + Username + ". Please try again.");
                 return;
             }
 
@@ -61,7 +68,9 @@ public class BedwarsStatsCommand {
             }
 
             if (needProfile) {
-                String guild = fetchPlayerGuildData(uuid);
+                String guild = usedShmeadoFallback
+                        ? ShmeadoAPIUtils.fetchPlayerGuildJson(uuid)
+                        : fetchPlayerGuildData(uuid);
                 if (guild == null || guild.isEmpty()) {
                     guild = "{}";
                 }
