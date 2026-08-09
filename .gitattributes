@@ -1,0 +1,4 @@
+# Windows scripts should stay CRLF, shell scripts must be LF or CI breaks
+gradlew text eol=lf
+*.sh text eol=lf
+gradlew.bat text eol=crlf
