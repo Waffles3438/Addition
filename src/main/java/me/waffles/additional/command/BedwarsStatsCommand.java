@@ -8,10 +8,9 @@ import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.playerData.Bedwars;
 import me.waffles.additional.util.HypixelAPIUtils;
+import me.waffles.additional.util.ShmeadoAPIUtils;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
-
-import java.io.IOException;
 
 @Command(value = "bw")
 public class BedwarsStatsCommand {
@@ -44,16 +43,38 @@ public class BedwarsStatsCommand {
     }
 
     private void fetchAndPrintStats(String Username, String uuid) {
+        String key = Username.toLowerCase();
 
         // fetch stats here
-        if(!Additional.bedwarsStatsList.containsKey(Username.toLowerCase())) {
-            try {
-                Additional.playerProfileList.put(Username.toLowerCase(), fetchPlayerProfileData(uuid));
-                Additional.bedwarsStatsList.put(Username.toLowerCase(), fetchPlayerBedwarsStats(uuid));
-            } catch (IOException e) {
-                UChat.chat("Something broke while fetching stats!");
-                e.printStackTrace();
-                throw new RuntimeException(e);
+        boolean needProfile = !Additional.playerProfileList.containsKey(key);
+        boolean needStats = !Additional.bedwarsStatsList.containsKey(key);
+
+        if (needProfile || needStats) {
+            String stjson = fetchPlayerData(uuid);
+            boolean usedShmeadoFallback = false;
+
+            if (stjson == null || stjson.isEmpty()) {
+                stjson = ShmeadoAPIUtils.fetchPlayerStatsJson(Username);
+                usedShmeadoFallback = true;
+            }
+
+            if (stjson == null || stjson.isEmpty()) {
+                UChat.chat("Something went wrong while fetching stats for " + Username + ". Please try again.");
+                return;
+            }
+
+            if (needStats) {
+                Additional.bedwarsStatsList.put(key, HypixelAPIUtils.parseBedwarsPlayerData(stjson));
+            }
+
+            if (needProfile) {
+                String guild = usedShmeadoFallback
+                        ? ShmeadoAPIUtils.fetchPlayerGuildJson(uuid)
+                        : fetchPlayerGuildData(uuid);
+                if (guild == null || guild.isEmpty()) {
+                    guild = "{}";
+                }
+                Additional.playerProfileList.put(key, HypixelAPIUtils.parsePlayerProfilePlayerData(stjson, guild));
             }
         }
 
@@ -125,25 +146,6 @@ public class BedwarsStatsCommand {
                 "http://api.abyssoverlay.com/guild?uuid=" + uuid,
                 "node-ao/2.0.3"
         );
-    }
-
-    public PlayerProfile fetchPlayerProfileData(String uuid) {
-        String stjson = fetchPlayerData(uuid);
-        String guild =  fetchPlayerGuildData(uuid);
-        if (stjson == null || stjson.isEmpty() || guild == null || guild.isEmpty()) {
-            System.out.println("Either player or guild is empty");
-            return null;
-        }
-        return HypixelAPIUtils.parsePlayerProfilePlayerData(stjson, guild);
-    }
-
-    public Bedwars fetchPlayerBedwarsStats(String uuid)
-        throws IOException {
-        String stjson = fetchPlayerData(uuid);
-        if (stjson == null || stjson.isEmpty()) {
-            return null;
-        }
-        return HypixelAPIUtils.parseBedwarsPlayerData(stjson);
     }
 
     public enum Rank {

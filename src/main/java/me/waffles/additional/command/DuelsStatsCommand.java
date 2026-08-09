@@ -7,6 +7,7 @@ import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
 import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.util.HypixelAPIUtils;
+import me.waffles.additional.util.ShmeadoAPIUtils;
 import me.waffles.additional.playerData.Duels;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
@@ -48,15 +49,38 @@ public class DuelsStatsCommand {
     }
 
     private void fetchAndPrintStats(String Username, String uuid) {
+        String key = Username.toLowerCase();
 
         // fetch stats here
-        if(!Additional.duelsStatsList.containsKey(Username.toLowerCase())) {
-            try {
-                Additional.playerProfileList.put(Username.toLowerCase(), fetchPlayerProfileData(uuid));
-                Additional.duelsStatsList.put(Username.toLowerCase(), fetchPlayerDuelsStats(uuid));
-            } catch (Exception e) {
-                UChat.chat("Something broke while fetching stats!");
-                e.printStackTrace();
+        boolean needProfile = !Additional.playerProfileList.containsKey(key);
+        boolean needStats = !Additional.duelsStatsList.containsKey(key);
+
+        if (needProfile || needStats) {
+            String stjson = fetchPlayerData(uuid);
+            boolean usedShmeadoFallback = false;
+
+            if (stjson == null || stjson.isEmpty()) {
+                stjson = ShmeadoAPIUtils.fetchPlayerStatsJson(Username);
+                usedShmeadoFallback = true;
+            }
+
+            if (stjson == null || stjson.isEmpty()) {
+                UChat.chat("Something went wrong while fetching stats for " + Username + ". Please try again.");
+                return;
+            }
+
+            if (needStats) {
+                Additional.duelsStatsList.put(key, HypixelAPIUtils.parseDuelsPlayerData(stjson));
+            }
+
+            if (needProfile) {
+                String guild = usedShmeadoFallback
+                        ? ShmeadoAPIUtils.fetchPlayerGuildJson(uuid)
+                        : fetchPlayerGuildData(uuid);
+                if (guild == null || guild.isEmpty()) {
+                    guild = "{}";
+                }
+                Additional.playerProfileList.put(key, HypixelAPIUtils.parsePlayerProfilePlayerData(stjson, guild));
             }
         }
 
@@ -119,25 +143,6 @@ public class DuelsStatsCommand {
                 "http://api.abyssoverlay.com/guild?uuid=" + uuid,
                 "node-ao/2.0.3"
         );
-    }
-
-    public PlayerProfile fetchPlayerProfileData(String uuid) {
-        String stjson = fetchPlayerData(uuid);
-        String guild =  fetchPlayerGuildData(uuid);
-        if (stjson == null || stjson.isEmpty() || guild == null || guild.isEmpty()) {
-            System.out.println("Either player or guild is empty");
-            return null;
-        }
-        return HypixelAPIUtils.parsePlayerProfilePlayerData(stjson, guild);
-    }
-
-
-    public Duels fetchPlayerDuelsStats(String uuid) {
-        String stjson = fetchPlayerData(uuid);
-        if (stjson == null || stjson.isEmpty()) {
-            return null;
-        }
-        return HypixelAPIUtils.parseDuelsPlayerData(stjson);
     }
 
     private String formatColors(int stat, int god) {
