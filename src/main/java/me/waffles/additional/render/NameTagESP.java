@@ -5,6 +5,9 @@ import me.waffles.additional.util.BotUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
+import net.minecraft.client.renderer.culling.ClippingHelperImpl;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
@@ -25,6 +28,8 @@ import java.util.UUID;
 public class NameTagESP {
 
     private final Minecraft mc = Minecraft.getMinecraft();
+
+    private ICamera frustum;
 
     public static final Set<UUID> renderedPlayers = new HashSet<>();
 
@@ -63,6 +68,35 @@ public class NameTagESP {
         double py = camera.lastTickPosY + (camera.posY - camera.lastTickPosY) * pt;
         double pz = camera.lastTickPosZ + (camera.posZ - camera.lastTickPosZ) * pt;
 
+        // Vanilla only reaches renderName for entities that survived the frustum check
+        // in RenderGlobal.renderEntities, so it never draws a label for someone
+        // off-screen or behind the camera. Our candidate set has no such filter - it is
+        // every player the entity pass skipped, whether that was the culler or the
+        // frustum - so apply vanilla's own test before paying for a label. In a busy
+        // lobby this is most of them, and a label costs a getFormattedText() plus a
+        // glBegin/glEnd pair per character, twice.
+        //
+        // ClippingHelperImpl reads the current projection/modelview, which this late in
+        // the frame is still the world camera: everything drawn since setupCameraTransform
+        // pushes and pops. Frustum wraps the ClippingHelperImpl singleton, so the
+        // instance can be reused across frames as long as getInstance() refreshes it.
+        ClippingHelperImpl.getInstance();
+        if (frustum == null) frustum = new Frustum();
+        frustum.setPosition(px, py, pz);
+
+        // Test against the plain bounding box, exactly as RenderGlobal does. The label
+        // sits above it, so a player just off the bottom edge whose name would still
+        // poke into view gets skipped - which is what vanilla does to that same player
+        // when the entity pass culls them.
+        int visible = 0;
+        for (int i = 0; i < candidates.size(); i++) {
+            EntityPlayer player = candidates.get(i);
+            if (frustum.isBoundingBoxInFrustum(player.getEntityBoundingBox())) {
+                candidates.set(visible++, player);
+            }
+        }
+        if (visible == 0) return;
+
         RenderManager rm = mc.getRenderManager();
 
         // RenderLib replaces the vanilla RenderGlobal.renderEntities call, so
@@ -94,7 +128,9 @@ public class NameTagESP {
         mc.entityRenderer.enableLightmap();
         PolyNametagCompat.usingDirectRender(true);
         try {
-            for (EntityPlayer player : candidates) {
+            for (int i = 0; i < visible; i++) {
+                EntityPlayer player = candidates.get(i);
+
                 int brightness = player.isBurning() ? 15728880 : player.getBrightnessForRender(pt);
                 OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
                         (float) (brightness % 65536), (float) (brightness / 65536));
