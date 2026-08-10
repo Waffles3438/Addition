@@ -3,6 +3,7 @@ package me.waffles.additional.render;
 import me.waffles.additional.config.ModConfig;
 import me.waffles.additional.util.BotUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
@@ -13,6 +14,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import org.lwjgl.opengl.GL11;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -77,6 +79,18 @@ public class NameTagESP {
         //
         // The reflection behind usingDirectRender only toggles once per frame,
         // so set it once for the whole loop instead of once per player.
+        //
+        // Vanilla only ever draws labels in the middle of the entity pass, so
+        // renderName/renderLivingLabel leave GL configured for that pass: lighting on,
+        // the label's blend func applied, and the lightmap coords of whatever entity
+        // was drawn last. None of that holds during RenderWorldLastEvent, and anything
+        // drawing after us in this event (block overlays, other ESPs) would inherit it
+        // and come out the wrong color, so snapshot the lightmap coords we cannot
+        // re-derive and restore the rest when we are done.
+        float prevBrightnessX = OpenGlHelper.lastBrightnessX;
+        float prevBrightnessY = OpenGlHelper.lastBrightnessY;
+
+        GlStateManager.pushMatrix();
         mc.entityRenderer.enableLightmap();
         PolyNametagCompat.usingDirectRender(true);
         try {
@@ -96,7 +110,25 @@ public class NameTagESP {
             }
         } finally {
             PolyNametagCompat.usingDirectRender(false);
+            OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, prevBrightnessX, prevBrightnessY);
             mc.entityRenderer.disableLightmap();
+
+            // renderLivingLabel finishes with enableLighting(): fine inside the entity
+            // pass, but out here it means every later draw is lit instead of taking the
+            // color from glColor, which is what recolors block overlays.
+            GlStateManager.disableLighting();
+            GlStateManager.enableDepth();
+            GlStateManager.depthMask(true);
+            GlStateManager.disableBlend();
+            // GlStateManager.blendFunc only records the RGB factors, so the label's
+            // blendFunc(SRC_ALPHA, ONE_MINUS_SRC_ALPHA) left the cached alpha factors
+            // describing state GL no longer has. Dirty the cache first so the following
+            // tryBlendFuncSeparate is not skipped as a redundant call.
+            GlStateManager.blendFunc(GL11.GL_ONE, GL11.GL_ZERO);
+            GlStateManager.tryBlendFuncSeparate(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA, GL11.GL_ONE, GL11.GL_ZERO);
+            GlStateManager.enableTexture2D();
+            GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
+            GlStateManager.popMatrix();
         }
     }
 }
