@@ -47,6 +47,11 @@ public class NameTagESP {
         EntityPlayer viewer = mc.thePlayer;
         if (viewer == null || mc.theWorld == null) return;
 
+        // An out-of-date PolyNametag cannot be bridged to, and the symptom (nametags a
+        // frame behind) is easy to mistake for this feature just being broken. Say so
+        // once, now that we know the player has actually enabled it.
+        PolyNametagCompat.warnIfIncompatible();
+
         // Gather only the players the vanilla pass already culled (those marked in
         // renderedPlayers are skipped). If nothing is left we can bail before
         // touching the lightmap or re-caching the render pipeline at all.
