@@ -20,7 +20,12 @@ public class RenderMixin {
     private void enableOffsetFill(Entity entity, String str, double x, double y, double z, int maxDistance, CallbackInfo ci) {
         if(ModConfig.nametagsThroughWalls && !BotUtils.isBot(entity) && ModConfig.masterSwitch) {
             glEnable(GL_POLYGON_OFFSET_FILL);
-            glPolygonOffset(1.0f, -Float.MAX_VALUE);
+            // The units term is scaled by the smallest resolvable depth difference before
+            // being applied, so it only has to be large enough to clear a wall between the
+            // tag and the camera - nowhere near the float maximum. -Float.MAX_VALUE
+            // overflows the fixed-point depth representation drivers convert this into,
+            // which is undefined and vendor dependent; a large finite value is predictable.
+            glPolygonOffset(1.0f, -1000000000f);
         }
     }
 
