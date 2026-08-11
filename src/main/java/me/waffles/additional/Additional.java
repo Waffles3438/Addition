@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import me.waffles.additional.command.BedwarsStatsCommand;
@@ -56,6 +57,15 @@ public class Additional {
 
     @SubscribeEvent
     public void onDisconnect(FMLNetworkEvent.ClientDisconnectionFromServerEvent event) {
+        BotUtils.clearCache();
+    }
+
+    @SubscribeEvent
+    public void onWorldLoad(WorldEvent.Load event) {
+        // Hypixel is a BungeeCord network, so moving between lobbies and games swaps the
+        // WorldClient without ever firing ClientDisconnectionFromServerEvent. Clearing only
+        // on disconnect meant a classification made in one game was reused for the rest of
+        // the session, and a player who had since left the tab list was never re-evaluated.
         BotUtils.clearCache();
     }
 }
