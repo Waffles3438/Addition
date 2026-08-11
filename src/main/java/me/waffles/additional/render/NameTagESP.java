@@ -58,6 +58,25 @@ public class NameTagESP {
         List<EntityPlayer> candidates = null;
         for (EntityPlayer player : mc.theWorld.playerEntities) {
             if (player == viewer) continue;
+
+            // playerEntities and the chunk entity lists RenderGlobal.renderEntities walks
+            // are separate lists with independent removal paths, so a player can sit in
+            // this one while being unreachable by the entity pass. addedToChunk tracks
+            // membership of exactly those chunk lists, so once it is false the entity pass
+            // can never label this player and neither should we - there is no body under
+            // the tag to label.
+            //
+            // deathTime is the same field RendererLivingEntity.doRender uses to decide
+            // whether to apply the death rotation, so it is precisely "this model is being
+            // drawn in the dead state". A death that gets stuck there leaves the sneak flag
+            // and height unsettled, and because renderName picks between
+            // renderOffsetLivingLabel and renderLivingLabel on isSneaking() - only one of
+            // which we shift by -0.25 - the tag lands somewhere different every frame and
+            // shakes. Health is deliberately not used here: it comes from the DataWatcher
+            // and servers do not always sync it honestly for other players, so filtering on
+            // it risks hiding every nametag.
+            if (player.isDead || player.deathTime > 0 || !player.addedToChunk) continue;
+
             if (BotUtils.isBot(player)) continue;
             if (renderedPlayers.contains(player.getUniqueID())) continue;
             if (candidates == null) candidates = new ArrayList<EntityPlayer>(4);
