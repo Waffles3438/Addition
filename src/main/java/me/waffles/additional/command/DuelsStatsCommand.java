@@ -24,39 +24,32 @@ public class DuelsStatsCommand {
 
     @Main
     private void main() {
-        GameProfile self = Minecraft.getMinecraft().getSession().getProfile();
-        String Username = self.getName();
-        String uuid = self.getId().toString();
-        boolean nicked = NickUtils.looksNicked(self.getId());
+        String Username = Minecraft.getMinecraft().getSession().getProfile().getName();
+        String uuid = Minecraft.getMinecraft().getSession().getProfile().getId().toString();
 
         Multithreading.runAsync(() ->
-            fetchAndPrintStats(Username, uuid, nicked)
+            fetchAndPrintStats(Username, uuid)
         );
     }
 
     @Main
     private void main(GameProfile player1) {
-        String Username, uuid;
-        try {
-            uuid = player1.getId().toString();
-            Username = player1.getName();
-        } catch (Exception e) {
-            e.printStackTrace();
-            UChat.chat("Invalid player");
-            return;
-        }
+        Multithreading.runAsync(() -> {
+            String Username, uuid;
+            try {
+                uuid = player1.getId().toString();
+                Username = player1.getName();
+            } catch (Exception e) {
+                e.printStackTrace();
+                UChat.chat("Invalid player");
+                return;
+            }
 
-        // Resolved here rather than inside the worker below. NetHandlerPlayClient's player
-        // map is mutated on the client thread when PlayerListItem packets arrive, so
-        // reading it from the async worker would be a data race.
-        boolean nicked = NickUtils.looksNicked(player1.getId());
-
-        Multithreading.runAsync(() ->
-            fetchAndPrintStats(Username, uuid, nicked)
-        );
+            fetchAndPrintStats(Username, uuid);
+        });
     }
 
-    private void fetchAndPrintStats(String Username, String uuid, boolean nicked) {
+    private void fetchAndPrintStats(String Username, String uuid) {
         String key = Username.toLowerCase();
 
         // fetch stats here
@@ -93,20 +86,20 @@ public class DuelsStatsCommand {
         }
 
         // print stats here
-        printStats(Username, nicked);
+        printStats(Username, uuid);
     }
 
-    private void printStats(String Username, boolean nicked) {
+    private void printStats(String Username, String uuid) {
         PlayerProfile profile = Additional.playerProfileList.get(Username.toLowerCase());
 
         if(profile == null) {
             UChat.chat("Invalid player");
             return;
         } else if(profile.getDisplayName() == null) {
-            // Hypixel has no record of them. That on its own is not a nick: a real account
-            // that never played Hypixel looks identical here. NickUtils additionally
-            // requires a real-account UUID that is currently in the player list.
-            UChat.chat(NickUtils.describeMissingPlayer(Username, nicked));
+            // Hypixel has no record of this account - abyssoverlay answers "player": null.
+            // The name resolved to a UUID and the request itself succeeded, so the account is
+            // real and the name it is being shown under is not the one Hypixel knows it by.
+            UChat.chat(NickUtils.describeMissingPlayer(Username, uuid));
             return;
         }
         String formattedName = profile.getDisplayName();

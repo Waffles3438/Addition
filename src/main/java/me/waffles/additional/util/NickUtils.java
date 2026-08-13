@@ -1,30 +1,18 @@
 package me.waffles.additional.util;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.network.NetHandlerPlayClient;
-
 import java.util.UUID;
 
 /**
  * Nick detection for stat lookups.
  *
- * Hypixel presents a nicked player to everyone else under a generated name and UUID, so
- * looking that UUID up finds no player on the API even though they are standing right
- * there in the game. That is the signal, but "no Hypixel record" on its own is not enough
- * to call a nick, because a real account that simply never played Hypixel also has no
- * record. RedMister is one: a valid account, zero Hypixel stats, not nicked.
+ * Hypixel presents a nicked player to everyone else under a generated name, and the API has
+ * no player behind it - abyssoverlay answers with {@code "player": null}. So once a name has
+ * resolved to a valid UUID and the request itself succeeded, "Hypixel has no record of this
+ * account" is the nick signal.
  *
- * So a nick needs all three of:
- * <ul>
- *   <li>a UUID that could belong to a real account - Hypixel issues version 2 UUIDs to its
- *       fake entities and lobby NPCs, and those are not nicked players;</li>
- *   <li>presence in the server player list, meaning they are on Hypixel right now, so a
- *       name the API does not know cannot be their real one;</li>
- *   <li>no Hypixel player record at all, which the caller establishes.</li>
- * </ul>
- *
- * Looking up a real-but-unplayed account by name satisfies the first and third but not the
- * second, so it keeps the plain "no Hypixel stats" message.
+ * Note this is a property of the account the lookup landed on, not of the lookup being
+ * performed in game: RedMister is a real account that returns {@code "player": null} on
+ * abyssoverlay, and is reported as nicked on that basis.
  */
 public final class NickUtils {
 
@@ -32,54 +20,29 @@ public final class NickUtils {
     }
 
     /**
-     * Whether this UUID could belong to a real Minecraft account.
-     *
-     * Hypixel hands out version 2 UUIDs to fake entities and lobby NPCs. Those show up in
-     * the world without a Hypixel record, so without this check they would be reported as
-     * nicked players.
+     * Whether this is a well formed UUID, i.e. the name actually resolved to an account
+     * rather than to something we can draw no conclusion from.
      */
-    public static boolean isRealAccountUuid(UUID uuid) {
-        return uuid != null && uuid.version() != 2;
-    }
-
-    /**
-     * Whether the client currently sees this UUID in the server player list.
-     *
-     * Must be called on the client thread. NetHandlerPlayClient's player map is mutated
-     * there when PlayerListItem packets are handled, so reading it from a command's async
-     * worker would be a data race - which is why the stat commands resolve this before
-     * handing off to Multithreading.
-     */
-    public static boolean isInPlayerList(UUID uuid) {
-        if (uuid == null) {
+    public static boolean isValidUuid(String uuid) {
+        if (uuid == null || uuid.isEmpty()) {
             return false;
         }
 
-        // Null on the main menu and between worlds.
-        NetHandlerPlayClient netHandler = Minecraft.getMinecraft().getNetHandler();
-        if (netHandler == null) {
+        try {
+            UUID.fromString(uuid);
+            return true;
+        } catch (IllegalArgumentException e) {
             return false;
         }
-
-        return netHandler.getPlayerInfo(uuid) != null;
     }
 
     /**
-     * Whether a player the API has no record of should be reported as nicked.
+     * Message for a player Hypixel has no record of.
      *
-     * Client thread only, see {@link #isInPlayerList(UUID)}.
+     * Shared by both stat commands so the wording cannot drift between them.
      */
-    public static boolean looksNicked(UUID uuid) {
-        return isRealAccountUuid(uuid) && isInPlayerList(uuid);
-    }
-
-    /**
-     * Message for a player the API has no record of.
-     *
-     * @param nicked as resolved on the client thread by {@link #looksNicked(UUID)}
-     */
-    public static String describeMissingPlayer(String username, boolean nicked) {
-        if (nicked) {
+    public static String describeMissingPlayer(String username, String uuid) {
+        if (isValidUuid(uuid)) {
             return "§b" + username + " §fis §cnicked§f.";
         }
         return username + " has no Hypixel stats.";
