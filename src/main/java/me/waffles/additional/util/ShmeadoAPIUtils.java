@@ -1,5 +1,6 @@
 package me.waffles.additional.util;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -33,25 +34,29 @@ public class ShmeadoAPIUtils {
         JsonObject player = new JsonObject();
 
         Matcher nameMatcher = TITLE_PATTERN.matcher(page);
-        String displayName = nameMatcher.find()
+        boolean titleMatched = nameMatcher.find();
+        String displayName = titleMatched
                 ? nameMatcher.group(1)
                 : username;
         player.addProperty("displayname", displayName);
 
         Matcher rankMatcher = RANK_PATTERN.matcher(page);
-        if (rankMatcher.find()) {
+        boolean rankMatched = rankMatcher.find();
+        if (rankMatched) {
             applyRank(player, unquote(rankMatcher.group(1)), unquote(rankMatcher.group(2)), unquote(rankMatcher.group(3)));
         }
 
         Matcher levelMatcher = LEVEL_PATTERN.matcher(page);
-        if (levelMatcher.find()) {
+        boolean levelMatched = levelMatcher.find();
+        if (levelMatched) {
             player.add("achievements", new JsonObject());
             player.getAsJsonObject("achievements")
                     .addProperty("bedwars_level", Integer.parseInt(levelMatcher.group(1)));
         }
 
         Matcher netExpMatcher = NET_EXP_PATTERN.matcher(page);
-        if (netExpMatcher.find()) {
+        boolean netExpMatched = netExpMatcher.find();
+        if (netExpMatched) {
             player.addProperty("networkExp", Long.parseLong(netExpMatcher.group(1)));
         }
 
@@ -70,6 +75,25 @@ public class ShmeadoAPIUtils {
         player.add("stats", stats);
 
         JsonObject root = new JsonObject();
+
+        // Nothing on the page identified a player: no title, no rank, no level, no network
+        // exp and neither stats block. That is Shmeado saying it has no such player, and it
+        // has to reach the caller in the same shape abyssoverlay uses - "player": null - so
+        // that nick detection behaves identically whichever backend answered. Previously a
+        // player object was always synthesised with displayname defaulted to the requested
+        // username, which made "no such player" indistinguishable from a real one and left
+        // a nick looking like someone who had simply never played the mode.
+        //
+        // This deliberately requires *every* signal to be absent rather than keying on the
+        // title alone. If Shmeado ever changes its <title> format, a real player still
+        // matches on rank, level, network exp or a stats block, so a format change on its
+        // own cannot make every fallback lookup report a nick.
+        if (!titleMatched && !rankMatched && !levelMatched && !netExpMatched
+                && bedwars == null && duels == null) {
+            root.add("player", JsonNull.INSTANCE);
+            return root.toString();
+        }
+
         root.add("player", player);
         return root.toString();
     }
