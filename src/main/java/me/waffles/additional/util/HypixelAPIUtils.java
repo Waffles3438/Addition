@@ -2,6 +2,7 @@ package me.waffles.additional.util;
 
 import cc.polyfrost.oneconfig.libs.universal.UChat;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import me.waffles.additional.command.DuelsStatsCommand;
@@ -93,6 +94,23 @@ public class HypixelAPIUtils {
         }
     }
 
+    /**
+     * The player object, or null when the API has no record of this player.
+     *
+     * A missing "player" key and an explicit JSON null both mean "no such player", and a
+     * nicked player produces one or the other depending on which backend answered.
+     * JsonObject.get() hands back a Java null for an absent key, so calling isJsonNull()
+     * on it directly threw NPE and got swallowed by the catch blocks below - surfacing as
+     * "Something broke" in chat instead of a clean no-data result.
+     */
+    private static JsonObject getPlayerObject(JsonObject rootObject) {
+        JsonElement player = rootObject.get("player");
+        if (player == null || player.isJsonNull() || !player.isJsonObject()) {
+            return null;
+        }
+        return player.getAsJsonObject();
+    }
+
     public static PlayerProfile parsePlayerProfilePlayerData(String json, String guild) {
         JsonObject rootObject = new JsonParser().parse(json).getAsJsonObject();
         JsonObject guildObject = new JsonParser().parse(guild).getAsJsonObject();
@@ -102,10 +120,8 @@ public class HypixelAPIUtils {
         JsonObject profile;
 
         try {
-            if(!rootObject.get("player").isJsonNull()) {
-                profile = rootObject
-                        .getAsJsonObject("player");
-            } else {
+            profile = getPlayerObject(rootObject);
+            if (profile == null) {
                 return new PlayerProfile(
                         null,
                         null,
@@ -272,10 +288,10 @@ public class HypixelAPIUtils {
         JsonObject duelsStats, profile;
 
         try {
-            if(!rootObject.get("player").isJsonNull()
-                    && rootObject.get("player").getAsJsonObject().has("stats")
-                    && rootObject.get("player").getAsJsonObject().getAsJsonObject("stats").has("Duels")) {
-                profile = rootObject.get("player").getAsJsonObject();
+            profile = getPlayerObject(rootObject);
+            if (profile != null
+                    && profile.has("stats")
+                    && profile.getAsJsonObject("stats").has("Duels")) {
                 duelsStats = profile.getAsJsonObject("stats").getAsJsonObject("Duels");
             } else {
                 return new Duels(
@@ -404,15 +420,15 @@ public class HypixelAPIUtils {
         JsonObject bedwarsStats;
 
         try {
-            if(!rootObject.get("player").isJsonNull()
-                    && rootObject.getAsJsonObject("player").has("achievements")
-                    && rootObject.getAsJsonObject("player").has("stats")
-                    && rootObject.getAsJsonObject("player").getAsJsonObject("stats").has("Bedwars")) {
-                bedwarsStats = rootObject
-                        .getAsJsonObject("player")
+            JsonObject profile = getPlayerObject(rootObject);
+            if (profile != null
+                    && profile.has("achievements")
+                    && profile.has("stats")
+                    && profile.getAsJsonObject("stats").has("Bedwars")) {
+                bedwarsStats = profile
                         .getAsJsonObject("stats")
                         .getAsJsonObject("Bedwars");
-                achievements = rootObject.getAsJsonObject("player").getAsJsonObject("achievements");
+                achievements = profile.getAsJsonObject("achievements");
             } else {
                 return new Bedwars(
                         -1,

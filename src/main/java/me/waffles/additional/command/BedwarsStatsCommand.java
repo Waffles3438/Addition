@@ -8,6 +8,7 @@ import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.playerData.Bedwars;
 import me.waffles.additional.util.HypixelAPIUtils;
+import me.waffles.additional.util.NickUtils;
 import me.waffles.additional.util.ShmeadoAPIUtils;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
@@ -17,32 +18,39 @@ public class BedwarsStatsCommand {
 
     @Main
     private void main() {
-        String Username = Minecraft.getMinecraft().getSession().getProfile().getName();
-        String uuid = Minecraft.getMinecraft().getSession().getProfile().getId().toString();
+        GameProfile self = Minecraft.getMinecraft().getSession().getProfile();
+        String Username = self.getName();
+        String uuid = self.getId().toString();
+        boolean inPlayerList = NickUtils.isInPlayerList(self.getId());
 
         Multithreading.runAsync(() ->
-            fetchAndPrintStats(Username, uuid)
+            fetchAndPrintStats(Username, uuid, inPlayerList)
         );
     }
 
     @Main
     private void main(GameProfile player1) {
-        Multithreading.runAsync(() -> {
-            String Username, uuid;
-            try {
-                uuid = player1.getId().toString();
-                Username = player1.getName();
-            } catch (Exception e) {
-                e.printStackTrace();
-                UChat.chat("Invalid player");
-                return;
-            }
+        String Username, uuid;
+        try {
+            uuid = player1.getId().toString();
+            Username = player1.getName();
+        } catch (Exception e) {
+            e.printStackTrace();
+            UChat.chat("Invalid player");
+            return;
+        }
 
-            fetchAndPrintStats(Username, uuid);
-        });
+        // Resolved here rather than inside the worker below. NetHandlerPlayClient's player
+        // map is mutated on the client thread when PlayerListItem packets arrive, so
+        // reading it from the async worker would be a data race.
+        boolean inPlayerList = NickUtils.isInPlayerList(player1.getId());
+
+        Multithreading.runAsync(() ->
+            fetchAndPrintStats(Username, uuid, inPlayerList)
+        );
     }
 
-    private void fetchAndPrintStats(String Username, String uuid) {
+    private void fetchAndPrintStats(String Username, String uuid, boolean inPlayerList) {
         String key = Username.toLowerCase();
 
         // fetch stats here
@@ -79,17 +87,20 @@ public class BedwarsStatsCommand {
         }
 
         // prints stats here
-        printStats(Username);
+        printStats(Username, inPlayerList);
     }
 
-    private void printStats(String Username) {
+    private void printStats(String Username, boolean inPlayerList) {
         PlayerProfile profile = Additional.playerProfileList.get(Username.toLowerCase());
 
         if(profile == null) {
             UChat.chat("Invalid player");
             return;
         } else if(profile.getDisplayName() == null) {
-            UChat.chat(Username + " has no Hypixel stats.");
+            // Hypixel has no record of them. If they are in the player list they are on
+            // Hypixel right now, so the name we looked up cannot be their real one - which
+            // is a nick rather than someone who has simply never played.
+            UChat.chat(NickUtils.describeMissingPlayer(Username, inPlayerList));
             return;
         }
         String formattedName = profile.getDisplayName();
