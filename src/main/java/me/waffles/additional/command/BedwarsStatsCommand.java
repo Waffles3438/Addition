@@ -21,10 +21,10 @@ public class BedwarsStatsCommand {
         GameProfile self = Minecraft.getMinecraft().getSession().getProfile();
         String Username = self.getName();
         String uuid = self.getId().toString();
-        boolean inPlayerList = NickUtils.isInPlayerList(self.getId());
+        boolean nicked = NickUtils.looksNicked(self.getId());
 
         Multithreading.runAsync(() ->
-            fetchAndPrintStats(Username, uuid, inPlayerList)
+            fetchAndPrintStats(Username, uuid, nicked)
         );
     }
 
@@ -43,14 +43,14 @@ public class BedwarsStatsCommand {
         // Resolved here rather than inside the worker below. NetHandlerPlayClient's player
         // map is mutated on the client thread when PlayerListItem packets arrive, so
         // reading it from the async worker would be a data race.
-        boolean inPlayerList = NickUtils.isInPlayerList(player1.getId());
+        boolean nicked = NickUtils.looksNicked(player1.getId());
 
         Multithreading.runAsync(() ->
-            fetchAndPrintStats(Username, uuid, inPlayerList)
+            fetchAndPrintStats(Username, uuid, nicked)
         );
     }
 
-    private void fetchAndPrintStats(String Username, String uuid, boolean inPlayerList) {
+    private void fetchAndPrintStats(String Username, String uuid, boolean nicked) {
         String key = Username.toLowerCase();
 
         // fetch stats here
@@ -87,20 +87,20 @@ public class BedwarsStatsCommand {
         }
 
         // prints stats here
-        printStats(Username, inPlayerList);
+        printStats(Username, nicked);
     }
 
-    private void printStats(String Username, boolean inPlayerList) {
+    private void printStats(String Username, boolean nicked) {
         PlayerProfile profile = Additional.playerProfileList.get(Username.toLowerCase());
 
         if(profile == null) {
             UChat.chat("Invalid player");
             return;
         } else if(profile.getDisplayName() == null) {
-            // Hypixel has no record of them. If they are in the player list they are on
-            // Hypixel right now, so the name we looked up cannot be their real one - which
-            // is a nick rather than someone who has simply never played.
-            UChat.chat(NickUtils.describeMissingPlayer(Username, inPlayerList));
+            // Hypixel has no record of them. That on its own is not a nick: a real account
+            // that never played Hypixel looks identical here. NickUtils additionally
+            // requires a real-account UUID that is currently in the player list.
+            UChat.chat(NickUtils.describeMissingPlayer(Username, nicked));
             return;
         }
         String formattedName = profile.getDisplayName();
