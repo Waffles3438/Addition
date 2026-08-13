@@ -29,10 +29,31 @@ public class HypixelAPIUtils {
     private static final int CONNECT_TIMEOUT = 5000;
     private static final int READ_TIMEOUT = 10000;
 
-    public static String fetchPlayerData(String urlString, String userAgent) {
+    /**
+     * Outcome of a fetch.
+     *
+     * A transient failure and "this endpoint has no such player" both produce an empty body,
+     * so they are indistinguishable to a caller that only sees a String. notFound separates
+     * them, which matters because one should be reported as a retryable error and the other
+     * as a definitive answer about the player.
+     */
+    public static final class Response {
+        /** Body on success. Empty when the request failed or the player was not found. */
+        public final String body;
+
+        /** True when the endpoint answered 404, i.e. it definitively has no such player. */
+        public final boolean notFound;
+
+        private Response(String body, boolean notFound) {
+            this.body = body;
+            this.notFound = notFound;
+        }
+    }
+
+    public static Response fetchPlayerDataDetailed(String urlString, String userAgent) {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
-                String response = doFetch(urlString, userAgent);
+                Response response = doFetch(urlString, userAgent);
                 if (response != null) {
                     return response;
                 }
@@ -47,14 +68,21 @@ public class HypixelAPIUtils {
                     Thread.sleep(500L * attempt);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    return "";
+                    return new Response("", false);
                 }
             }
         }
-        return "";
+        return new Response("", false);
     }
 
-    private static String doFetch(String urlString, String userAgent) throws IOException {
+    public static String fetchPlayerData(String urlString, String userAgent) {
+        return fetchPlayerDataDetailed(urlString, userAgent).body;
+    }
+
+    /**
+     * @return null when the attempt should be retried, otherwise the outcome
+     */
+    private static Response doFetch(String urlString, String userAgent) throws IOException {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(urlString);
@@ -80,13 +108,13 @@ public class HypixelAPIUtils {
                     }
                 }
 
-                return response.toString();
+                return new Response(response.toString(), false);
             }
 
             if (responseCode == 429 || responseCode >= 500) {
                 return null;
             }
-            return "";
+            return new Response("", responseCode == HttpURLConnection.HTTP_NOT_FOUND);
         } finally {
             if (connection != null) {
                 connection.disconnect();

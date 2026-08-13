@@ -21,14 +21,41 @@ public class ShmeadoAPIUtils {
     private static final Pattern BAD_TOKEN = Pattern.compile("\\b(undefined|NaN|Infinity)\\b");
     private static final Pattern DOT_NUMBER = Pattern.compile("(?<![.\\w])\\.(\\d+)");
 
+    /**
+     * Shmeado's answer for a name it holds nothing for, e.g. "Invalid Name/UUID 'redmister'".
+     * It means "no Hypixel data here", not "no such Minecraft account", so it has to be
+     * reported the same way abyssoverlay's {@code "player": null} is.
+     */
+    private static final Pattern NO_SUCH_PLAYER = Pattern.compile("Invalid Name/UUID", Pattern.CASE_INSENSITIVE);
+
+    /** Same shape abyssoverlay uses for a player it has no record of. */
+    private static String noPlayerJson() {
+        JsonObject root = new JsonObject();
+        root.add("player", JsonNull.INSTANCE);
+        return root.toString();
+    }
+
     public static String fetchPlayerStatsJson(String username) {
-        String page = HypixelAPIUtils.fetchPlayerData(
+        HypixelAPIUtils.Response response = HypixelAPIUtils.fetchPlayerDataDetailed(
                 String.format(BASE_URL, username),
                 USER_AGENT
         );
 
+        // A definitive "no such player" rather than a transient failure, so answer with it
+        // instead of letting it fall through as an empty body and read as a fetch error.
+        if (response.notFound) {
+            return noPlayerJson();
+        }
+
+        String page = response.body;
+
         if (page == null || page.isEmpty()) {
             return "";
+        }
+
+        // Served with a 200 and the message in the body.
+        if (NO_SUCH_PLAYER.matcher(page).find()) {
+            return noPlayerJson();
         }
 
         JsonObject player = new JsonObject();
@@ -90,8 +117,7 @@ public class ShmeadoAPIUtils {
         // own cannot make every fallback lookup report a nick.
         if (!titleMatched && !rankMatched && !levelMatched && !netExpMatched
                 && bedwars == null && duels == null) {
-            root.add("player", JsonNull.INSTANCE);
-            return root.toString();
+            return noPlayerJson();
         }
 
         root.add("player", player);
