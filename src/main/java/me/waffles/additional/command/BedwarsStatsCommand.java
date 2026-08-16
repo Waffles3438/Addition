@@ -4,10 +4,10 @@ import cc.polyfrost.oneconfig.libs.universal.UChat;
 import cc.polyfrost.oneconfig.utils.Multithreading;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Command;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
-import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.playerData.Bedwars;
-import me.waffles.additional.util.HypixelAPIUtils;
+import me.waffles.additional.util.AbyssAPIUtils;
+import me.waffles.additional.util.MojangAPIUtils;
 import me.waffles.additional.util.ShmeadoAPIUtils;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
@@ -26,19 +26,15 @@ public class BedwarsStatsCommand {
     }
 
     @Main
-    private void main(GameProfile player1) {
+    private void main(String username) {
         Multithreading.runAsync(() -> {
-            String Username, uuid;
-            try {
-                uuid = player1.getId().toString();
-                Username = player1.getName();
-            } catch (Exception e) {
-                e.printStackTrace();
+            String uuid = MojangAPIUtils.fetchUuid(username);
+            if (uuid == null) {
                 UChat.chat("Invalid player");
                 return;
             }
 
-            fetchAndPrintStats(Username, uuid);
+            fetchAndPrintStats(username, uuid);
         });
     }
 
@@ -64,7 +60,7 @@ public class BedwarsStatsCommand {
             }
 
             if (needStats) {
-                Additional.bedwarsStatsList.put(key, HypixelAPIUtils.parseBedwarsPlayerData(stjson));
+                Additional.bedwarsStatsList.put(key, AbyssAPIUtils.parseBedwarsPlayerData(stjson));
             }
 
             if (needProfile) {
@@ -74,7 +70,7 @@ public class BedwarsStatsCommand {
                 if (guild == null || guild.isEmpty()) {
                     guild = "{}";
                 }
-                Additional.playerProfileList.put(key, HypixelAPIUtils.parsePlayerProfilePlayerData(stjson, guild));
+                Additional.playerProfileList.put(key, AbyssAPIUtils.parsePlayerProfilePlayerData(stjson, guild));
             }
         }
 
@@ -135,14 +131,14 @@ public class BedwarsStatsCommand {
     }
 
     public String fetchPlayerData(String uuid) {
-        return HypixelAPIUtils.fetchPlayerData(
+        return AbyssAPIUtils.fetchPlayerData(
                 "http://api.abyssoverlay.com/player?uuid=" + uuid,
                 "node-ao/2.0.3"
         );
     }
 
     public String fetchPlayerGuildData(String uuid) {
-        return HypixelAPIUtils.fetchPlayerData(
+        return AbyssAPIUtils.fetchPlayerData(
                 "http://api.abyssoverlay.com/guild?uuid=" + uuid,
                 "node-ao/2.0.3"
         );

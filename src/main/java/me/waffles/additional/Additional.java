@@ -12,6 +12,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import me.waffles.additional.command.BedwarsStatsCommand;
 import me.waffles.additional.command.DuelsStatsCommand;
+import me.waffles.additional.command.TabListPlayerNameArgumentParser;
 import me.waffles.additional.config.ModConfig;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
@@ -42,6 +43,7 @@ public class Additional {
         duelsStatsList = new EldestRemovalMap<>(ModConfig.maxCacheSize);
         bedwarsStatsList = new EldestRemovalMap<>(ModConfig.maxCacheSize);
         playerProfileList = new EldestRemovalMap<>(ModConfig.maxCacheSize);
+        CommandManager.INSTANCE.addParser(new TabListPlayerNameArgumentParser());
         CommandManager.INSTANCE.registerCommand(new BedwarsStatsCommand());
         CommandManager.INSTANCE.registerCommand(new DuelsStatsCommand());
     }

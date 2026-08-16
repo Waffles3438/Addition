@@ -23,7 +23,7 @@ import java.net.URL;
 //import com.google.gson.GsonBuilder;
 import java.io.IOException;
 
-public class HypixelAPIUtils {
+public class AbyssAPIUtils {
     private static final int MAX_ATTEMPTS = 3;
     private static final int CONNECT_TIMEOUT = 5000;
     private static final int READ_TIMEOUT = 10000;
@@ -127,15 +127,15 @@ public class HypixelAPIUtils {
                 : null;
 
         if(tag != null) {
-            tag = tag.replaceAll("âœ§", "✧")
-                    .replaceAll("Î˜", "Θ")
-                    .replaceAll("âœŒ", "✌")
-                    .replaceAll("âœ¿", "✿")
-                    .replaceAll("âœª", "✪")
-                    .replaceAll("âžŠ", "➊")
-                    .replaceAll("âœ–", "✖")
+            tag = tag.replace("âœ§", "✧")
+                    .replace("Î˜", "Θ")
+                    .replace("âœŒ", "✌")
+                    .replace("âœ¿", "✿")
+                    .replace("âœª", "✪")
+                    .replace("âžŠ", "➊")
+                    .replace("âœ–", "✖")
                     .replaceAll("â?¤", "❤")
-                    .replaceAll("âœ“", "✓")
+                    .replace("âœ“", "✓")
                     .replaceAll("[^a-zA-Z0-9✧θ✌✿✪➊✖❤✓]", "");
         }
         
