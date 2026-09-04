@@ -23,7 +23,11 @@ public class RenderLivingEntityMixin {
             at = @At("HEAD")
     )
     private void markEspRendered(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
-        if (ModConfig.masterSwitch && ModConfig.nametagsThroughWalls && entity instanceof EntityPlayer) {
+        // Track labels from the normal pass whenever this class may run a fallback.
+        // Players absent from this set were culled before vanilla could call renderName.
+        if ((ModConfig.isLegitModeActive()
+                || (ModConfig.masterSwitch && ModConfig.nametagsThroughWalls))
+                && entity instanceof EntityPlayer) {
             NameTagESP.renderedPlayers.add(entity.getUniqueID());
         }
     }
@@ -36,7 +40,9 @@ public class RenderLivingEntityMixin {
     )
     private void shiftNameTagsWhileSneakingHead(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
         if(!(entity instanceof EntityPlayer)) return;
-        if(entity.isSneaking()) {
+        // Legit Mode preserves vanilla player nametag positioning. The predicate is
+        // false while the master switch is on, so ESP behavior still takes priority.
+        if(!ModConfig.isLegitModeActive() && entity.isSneaking()) {
             GlStateManager.pushMatrix();
             GlStateManager.translate(0.0F, -0.25F, 0.0F);
         }
@@ -51,7 +57,9 @@ public class RenderLivingEntityMixin {
     )
     private void shiftNameTagsWhileSneakingTail(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
         if(!(entity instanceof EntityPlayer)) return;
-        if(entity.isSneaking()) {
+        // Keep this condition identical to the head injection so the GL matrix stack
+        // remains balanced in every rendering mode.
+        if(!ModConfig.isLegitModeActive() && entity.isSneaking()) {
             GlStateManager.popMatrix();
         }
     }

@@ -42,7 +42,10 @@ public class NameTagESP {
 
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event) {
-        if (!ModConfig.masterSwitch || !ModConfig.nametagsThroughWalls) return;
+        // Legit Mode uses this existing label-only fallback for players skipped by
+        // Entity Culling; it does not restore the full player entity.
+        if (!ModConfig.isLegitModeActive()
+                && (!ModConfig.masterSwitch || !ModConfig.nametagsThroughWalls)) return;
 
         EntityPlayer viewer = mc.thePlayer;
         if (viewer == null || mc.theWorld == null) return;

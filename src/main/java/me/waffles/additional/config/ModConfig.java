@@ -67,6 +67,22 @@ public class ModConfig extends Config {
     )
     public static boolean nametagsThroughWalls = false;
 
+    @Switch(
+            name = "Legit Mode",
+            category = "Quality of Life",
+            subcategory = "Nametags",
+            size = OptionSize.DUAL
+    )
+    public static boolean legitMode = false;
+
+    /**
+     * Legit Mode is intentionally independent from the checkbox dependency state:
+     * the master switch always takes priority over it.
+     */
+    public static boolean isLegitModeActive() {
+        return legitMode && !masterSwitch;
+    }
+
     @Button(
             name = "Clear cache",
             text = "Clear",
