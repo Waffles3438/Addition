@@ -1,12 +1,13 @@
 package me.waffles.additional.mixin;
 
+import me.waffles.additional.config.ModConfig;
+import me.waffles.additional.render.NameTagESP;
 import me.waffles.additional.util.BotUtils;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RendererLivingEntity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.scoreboard.Team;
-import me.waffles.additional.config.ModConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -14,8 +15,22 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = RendererLivingEntity.class)
+@Mixin(value = RendererLivingEntity.class, priority = 1100)
 public class RenderLivingEntityMixin {
+
+    @Inject(
+            method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
+            at = @At("HEAD")
+    )
+    private void markEspRendered(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
+        // Track labels from the normal pass whenever this class may run a fallback.
+        // Players absent from this set were culled before vanilla could call renderName.
+        if ((ModConfig.isLegitModeActive()
+                || (ModConfig.masterSwitch && ModConfig.nametagsThroughWalls))
+                && entity instanceof EntityPlayer) {
+            NameTagESP.renderedPlayers.add(entity.getUniqueID());
+        }
+    }
 
     @Inject(
             method = "renderName(Lnet/minecraft/entity/EntityLivingBase;DDD)V",
@@ -25,7 +40,9 @@ public class RenderLivingEntityMixin {
     )
     private void shiftNameTagsWhileSneakingHead(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
         if(!(entity instanceof EntityPlayer)) return;
-        if(entity.isSneaking()) {
+        // Legit Mode preserves vanilla player nametag positioning. The predicate is
+        // false while the master switch is on, so ESP behavior still takes priority.
+        if(!ModConfig.isLegitModeActive() && entity.isSneaking()) {
             GlStateManager.pushMatrix();
             GlStateManager.translate(0.0F, -0.25F, 0.0F);
         }
@@ -40,7 +57,9 @@ public class RenderLivingEntityMixin {
     )
     private void shiftNameTagsWhileSneakingTail(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
         if(!(entity instanceof EntityPlayer)) return;
-        if(entity.isSneaking()) {
+        // Keep this condition identical to the head injection so the GL matrix stack
+        // remains balanced in every rendering mode.
+        if(!ModConfig.isLegitModeActive() && entity.isSneaking()) {
             GlStateManager.popMatrix();
         }
     }

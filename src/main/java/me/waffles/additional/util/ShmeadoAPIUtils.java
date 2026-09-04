@@ -19,15 +19,22 @@ public class ShmeadoAPIUtils {
     private static final Pattern TRAILING_COMMA = Pattern.compile(",\\s*([}\\]])");
     private static final Pattern BAD_TOKEN = Pattern.compile("\\b(undefined|NaN|Infinity)\\b");
     private static final Pattern DOT_NUMBER = Pattern.compile("(?<![.\\w])\\.(\\d+)");
+    private static final Pattern INVALID_NAME_OR_UUID_PATTERN =
+            Pattern.compile("Invalid\\s+Name\\s*/\\s*UUID", Pattern.CASE_INSENSITIVE);
+    private static final String NO_HYPIXEL_PLAYER_JSON = "{\"player\":null}";
 
     public static String fetchPlayerStatsJson(String username) {
-        String page = HypixelAPIUtils.fetchPlayerData(
+        String page = AbyssAPIUtils.fetchPlayerData(
                 String.format(BASE_URL, username),
                 USER_AGENT
         );
 
         if (page == null || page.isEmpty()) {
             return "";
+        }
+
+        if (INVALID_NAME_OR_UUID_PATTERN.matcher(page).find()) {
+            return NO_HYPIXEL_PLAYER_JSON;
         }
 
         JsonObject player = new JsonObject();
@@ -75,7 +82,7 @@ public class ShmeadoAPIUtils {
     }
 
     public static String fetchPlayerGuildJson(String uuid) {
-        String response = HypixelAPIUtils.fetchPlayerData(
+        String response = AbyssAPIUtils.fetchPlayerData(
                 String.format(GUILD_URL, uuid),
                 USER_AGENT
         );
