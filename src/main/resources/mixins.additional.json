@@ -9,8 +9,7 @@
   "client": [
     "RenderLivingEntityMixin",
     "EntityLivingBaseAccessor",
-    "RenderMixin",
-    "RenderLibEntityRendererMixin"
+    "RenderMixin"
   ],
   "verbose": true
 }
