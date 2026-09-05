@@ -23,11 +23,9 @@ public class RenderLivingEntityMixin {
             at = @At("HEAD")
     )
     private void markEspRendered(EntityLivingBase entity, double x, double y, double z, CallbackInfo ci) {
-        // Track labels from the normal pass whenever this class may run a fallback.
-        // Players absent from this set were culled before vanilla could call renderName.
-        if ((ModConfig.isLegitModeActive()
-                || (ModConfig.masterSwitch && ModConfig.nametagsThroughWalls))
-                && entity instanceof EntityPlayer) {
+        // Only the master-on through-wall fallback uses this inferred marker. Legit
+        // Mode receives the exact culling result from its optional integration.
+        if (ModConfig.masterSwitch && ModConfig.nametagsThroughWalls && entity instanceof EntityPlayer) {
             NameTagESP.renderedPlayers.add(entity.getUniqueID());
         }
     }

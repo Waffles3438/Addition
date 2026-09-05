@@ -32,20 +32,33 @@ public class NameTagESP {
     private ICamera frustum;
 
     public static final Set<UUID> renderedPlayers = new HashSet<>();
+    public static final Set<EntityPlayer> occludedPlayers = new HashSet<>();
+
+    /**
+     * Called by the optional RenderLib integration only after its occlusion test
+     * confirms that the player was actually culled.
+     */
+    public static void markOccludedPlayer(EntityPlayer player) {
+        occludedPlayers.add(player);
+    }
 
     @SubscribeEvent
     public void onRenderTick(TickEvent.RenderTickEvent event) {
         if (event.phase == TickEvent.Phase.START) {
             renderedPlayers.clear();
+            occludedPlayers.clear();
         }
     }
 
     @SubscribeEvent
     public void onRenderWorld(RenderWorldLastEvent event) {
-        // Legit Mode uses this existing label-only fallback for players skipped by
-        // Entity Culling; it does not restore the full player entity.
-        if (!ModConfig.isLegitModeActive()
-                && (!ModConfig.masterSwitch || !ModConfig.nametagsThroughWalls)) return;
+        boolean legitMode = ModConfig.isLegitModeActive();
+
+        // Legit Mode only needs a late pass when the optional culling integration
+        // actually reported occluded players. Otherwise vanilla already renders
+        // the labels and this avoids a per-frame lobby-wide scan.
+        if (legitMode && occludedPlayers.isEmpty()) return;
+        if (!legitMode && (!ModConfig.masterSwitch || !ModConfig.nametagsThroughWalls)) return;
 
         EntityPlayer viewer = mc.thePlayer;
         if (viewer == null || mc.theWorld == null) return;
@@ -55,35 +68,48 @@ public class NameTagESP {
         // once, now that we know the player has actually enabled it.
         PolyNametagCompat.warnIfIncompatible();
 
-        // Gather only the players the vanilla pass already culled (those marked in
-        // renderedPlayers are skipped). If nothing is left we can bail before
-        // touching the lightmap or re-caching the render pipeline at all.
         List<EntityPlayer> candidates = null;
-        for (EntityPlayer player : mc.theWorld.playerEntities) {
-            if (player == viewer) continue;
+        if (legitMode) {
+            // This set contains only entities that RenderLib's actual occlusion
+            // decision removed. It avoids treating every unmarked player as culled.
+            for (EntityPlayer player : occludedPlayers) {
+                if (player == viewer) continue;
+                if (player.isDead || player.deathTime > 0 || !player.addedToChunk) continue;
+                // Recheck immediately before rendering so a bot can never enter the
+                // label-only fallback even if its tab-list classification changed.
+                if (BotUtils.isBot(player)) continue;
+                if (candidates == null) candidates = new ArrayList<EntityPlayer>(occludedPlayers.size());
+                candidates.add(player);
+            }
+        } else {
+            // Gather only the players the normal pass already culled for the existing
+            // master-on through-wall feature. This path intentionally remains unchanged.
+            for (EntityPlayer player : mc.theWorld.playerEntities) {
+                if (player == viewer) continue;
 
-            // playerEntities and the chunk entity lists RenderGlobal.renderEntities walks
-            // are separate lists with independent removal paths, so a player can sit in
-            // this one while being unreachable by the entity pass. addedToChunk tracks
-            // membership of exactly those chunk lists, so once it is false the entity pass
-            // can never label this player and neither should we - there is no body under
-            // the tag to label.
-            //
-            // deathTime is the same field RendererLivingEntity.doRender uses to decide
-            // whether to apply the death rotation, so it is precisely "this model is being
-            // drawn in the dead state". A death that gets stuck there leaves the sneak flag
-            // and height unsettled, and because renderName picks between
-            // renderOffsetLivingLabel and renderLivingLabel on isSneaking() - only one of
-            // which we shift by -0.25 - the tag lands somewhere different every frame and
-            // shakes. Health is deliberately not used here: it comes from the DataWatcher
-            // and servers do not always sync it honestly for other players, so filtering on
-            // it risks hiding every nametag.
-            if (player.isDead || player.deathTime > 0 || !player.addedToChunk) continue;
+                // playerEntities and the chunk entity lists RenderGlobal.renderEntities walks
+                // are separate lists with independent removal paths, so a player can sit in
+                // this one while being unreachable by the entity pass. addedToChunk tracks
+                // membership of exactly those chunk lists, so once it is false the entity pass
+                // can never label this player and neither should we - there is no body under
+                // the tag to label.
+                //
+                // deathTime is the same field RendererLivingEntity.doRender uses to decide
+                // whether to apply the death rotation, so it is precisely "this model is being
+                // drawn in the dead state". A death that gets stuck there leaves the sneak flag
+                // and height unsettled, and because renderName picks between
+                // renderOffsetLivingLabel and renderLivingLabel on isSneaking() - only one of
+                // which we shift by -0.25 - the tag lands somewhere different every frame and
+                // shakes. Health is deliberately not used here: it comes from the DataWatcher
+                // and servers do not always sync it honestly for other players, so filtering on
+                // it risks hiding every nametag.
+                if (player.isDead || player.deathTime > 0 || !player.addedToChunk) continue;
 
-            if (BotUtils.isBot(player)) continue;
-            if (renderedPlayers.contains(player.getUniqueID())) continue;
-            if (candidates == null) candidates = new ArrayList<EntityPlayer>(4);
-            candidates.add(player);
+                if (renderedPlayers.contains(player.getUniqueID())) continue;
+                if (BotUtils.isBot(player)) continue;
+                if (candidates == null) candidates = new ArrayList<EntityPlayer>(4);
+                candidates.add(player);
+            }
         }
         if (candidates == null) return;
 
@@ -96,17 +122,9 @@ public class NameTagESP {
         double pz = camera.lastTickPosZ + (camera.posZ - camera.lastTickPosZ) * pt;
 
         // Vanilla only reaches renderName for entities that survived the frustum check
-        // in RenderGlobal.renderEntities, so it never draws a label for someone
-        // off-screen or behind the camera. Our candidate set has no such filter - it is
-        // every player the entity pass skipped, whether that was the culler or the
-        // frustum - so apply vanilla's own test before paying for a label. In a busy
-        // lobby this is most of them, and a label costs a getFormattedText() plus a
-        // glBegin/glEnd pair per character, twice.
-        //
-        // ClippingHelperImpl reads the current projection/modelview, which this late in
-        // the frame is still the world camera: everything drawn since setupCameraTransform
-        // pushes and pops. Frustum wraps the ClippingHelperImpl singleton, so the
-        // instance can be reused across frames as long as getInstance() refreshes it.
+        // in RenderGlobal.renderEntities. Keep the same test for both the culling-backed
+        // Legit Mode candidates and the existing master-on fallback before paying for a
+        // label. A label costs formatted text plus a GL draw per character.
         ClippingHelperImpl.getInstance();
         if (frustum == null) frustum = new Frustum();
         frustum.setPosition(px, py, pz);
