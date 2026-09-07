@@ -4,9 +4,9 @@ import cc.polyfrost.oneconfig.libs.universal.UChat;
 import cc.polyfrost.oneconfig.utils.Multithreading;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Command;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
+import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.util.AbyssAPIUtils;
-import me.waffles.additional.util.MojangAPIUtils;
 import me.waffles.additional.util.ShmeadoAPIUtils;
 import me.waffles.additional.playerData.Duels;
 import me.waffles.additional.playerData.PlayerProfile;
@@ -32,15 +32,22 @@ public class DuelsStatsCommand {
     }
 
     @Main
-    private void main(String username) {
+    private void main(GameProfile player) {
         Multithreading.runAsync(() -> {
-            String uuid = MojangAPIUtils.fetchUuid(username);
-            if (uuid == null) {
+            if (player == null || player.getName() == null || player.getId() == null) {
                 UChat.chat("Invalid player");
                 return;
             }
 
-            fetchAndPrintStats(username, uuid);
+            String username = player.getName();
+            String key = username.toLowerCase();
+            if (Additional.playerProfileList.containsKey(key)
+                    && Additional.duelsStatsList.containsKey(key)) {
+                printStats(username);
+                return;
+            }
+
+            fetchAndPrintStats(username, player.getId().toString());
         });
     }
 
