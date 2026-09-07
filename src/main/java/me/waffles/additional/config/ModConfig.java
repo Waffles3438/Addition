@@ -6,6 +6,7 @@ import cc.polyfrost.oneconfig.config.data.InfoType;
 import cc.polyfrost.oneconfig.libs.universal.UKeyboard;
 import cc.polyfrost.oneconfig.utils.Notifications;
 import me.waffles.additional.Additional;
+import me.waffles.additional.api.StatsProviderUtils;
 import cc.polyfrost.oneconfig.config.Config;
 import cc.polyfrost.oneconfig.config.data.Mod;
 import cc.polyfrost.oneconfig.config.data.ModType;
@@ -89,6 +90,7 @@ public class ModConfig extends Config {
             category = "Stat Checking"
     )
     Runnable runnable = () -> {
+        StatsProviderUtils.invalidateCacheGeneration();
         Additional.bedwarsStatsList.clear();
         Additional.duelsStatsList.clear();
         Additional.playerProfileList.clear();

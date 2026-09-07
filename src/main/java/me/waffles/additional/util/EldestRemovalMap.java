@@ -12,8 +12,37 @@ public class EldestRemovalMap<K, V> extends LinkedHashMap<K, V> {
     }
 
     @Override
-    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-        return size() > MAX_SIZE; // Remove oldest if size exceeds limit
+    public synchronized V get(Object key) {
+        return super.get(key);
+    }
+
+    @Override
+    public synchronized boolean containsKey(Object key) {
+        return super.containsKey(key);
+    }
+
+    @Override
+    public synchronized V put(K key, V value) {
+        return super.put(key, value);
+    }
+
+    @Override
+    public synchronized V remove(Object key) {
+        return super.remove(key);
+    }
+
+    @Override
+    public synchronized void clear() {
+        super.clear();
+    }
+
+    @Override
+    public synchronized int size() {
+        return super.size();
+    }
+
+    @Override
+    protected synchronized boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        return size() > MAX_SIZE; // Remove oldest if size exceeds MAX_SIZE
     }
 }
-

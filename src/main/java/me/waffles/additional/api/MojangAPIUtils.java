@@ -1,4 +1,4 @@
-package me.waffles.additional.util;
+package me.waffles.additional.api;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;

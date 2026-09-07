@@ -10,6 +10,7 @@ plugins {
 }
 
 repositories {
+    mavenCentral()
     maven("https://repo.polyfrost.org/releases")
     maven("https://repo.polyfrost.org/snapshots")
 }
@@ -21,6 +22,8 @@ dependencies {
     implementation("cc.polyfrost:oneconfig-wrapper-launchwrapper:1.0.0-beta+")
 
     compileOnly("org.spongepowered:mixin:0.7.11-SNAPSHOT")
+
+    testImplementation("junit:junit:4.13.2")
 }
 
 toolkitLoomHelper {

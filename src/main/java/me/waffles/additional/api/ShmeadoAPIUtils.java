@@ -1,4 +1,4 @@
-package me.waffles.additional.util;
+package me.waffles.additional.api;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -7,8 +7,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ShmeadoAPIUtils {
-    private static final String BASE_URL = "https://www.shmeado.club/player/stats/%s/";
-    private static final String GUILD_URL = "https://www.shmeado.club/player/guild/%s/";
+    private static final String BASE_URL = "https://shmeado.club/player/stats/%s/";
+    private static final String GUILD_URL = "https://shmeado.club/player/guild/%s/";
     private static final String USER_AGENT = "node-ao/2.0.3";
 
     private static final Pattern TITLE_PATTERN = Pattern.compile("<title>([^<]*?)'s Stats \\| Shmeado</title>");
@@ -26,9 +26,26 @@ public class ShmeadoAPIUtils {
     public static String fetchPlayerStatsJson(String username) {
         String page = AbyssAPIUtils.fetchPlayerData(
                 String.format(BASE_URL, username),
-                USER_AGENT
+                USER_AGENT,
+                "*/*"
         );
+        return parsePlayerStatsPage(username, page);
+    }
 
+    /**
+     * Fetches and converts one Shmeado stats-page request without transport retries.
+     * The alternating provider coordinator owns retry ordering and wait behavior.
+     */
+    public static String fetchPlayerStatsJsonOnce(String username) {
+        String page = AbyssAPIUtils.fetchPlayerDataOnce(
+                String.format(BASE_URL, username),
+                USER_AGENT,
+                "*/*"
+        );
+        return parsePlayerStatsPage(username, page);
+    }
+
+    private static String parsePlayerStatsPage(String username, String page) {
         if (page == null || page.isEmpty()) {
             return "";
         }
@@ -86,15 +103,34 @@ public class ShmeadoAPIUtils {
                 String.format(GUILD_URL, uuid),
                 USER_AGENT
         );
+        return parsePlayerGuildResponse(response);
+    }
 
+    /**
+     * Fetches and converts one Shmeado guild request without transport retries.
+     * An empty JSON object means the request succeeded but the player has no
+     * guild; an empty string means the provider was unavailable or malformed.
+     */
+    public static String fetchPlayerGuildJsonOnce(String uuid) {
+        String response = AbyssAPIUtils.fetchPlayerDataOnce(
+                String.format(GUILD_URL, uuid),
+                USER_AGENT
+        );
+        return parsePlayerGuildResponse(response);
+    }
+
+    private static String parsePlayerGuildResponse(String response) {
         if (response == null || response.isEmpty()) {
             return "";
         }
 
         try {
             JsonObject root = new JsonParser().parse(response).getAsJsonObject();
-            if (!root.has("success") || !root.get("success").getAsBoolean() || !root.has("guild")) {
+            if (!root.has("success") || !root.get("success").getAsBoolean()) {
                 return "";
+            }
+            if (!root.has("guild") || root.get("guild").isJsonNull()) {
+                return "{}";
             }
 
             JsonObject guild = root.getAsJsonObject("guild");

@@ -1,4 +1,4 @@
-package me.waffles.additional.util;
+package me.waffles.additional.api;
 
 import cc.polyfrost.oneconfig.libs.universal.UChat;
 
@@ -26,12 +26,23 @@ import java.io.IOException;
 public class AbyssAPIUtils {
     private static final int MAX_ATTEMPTS = 3;
     private static final int CONNECT_TIMEOUT = 5000;
-    private static final int READ_TIMEOUT = 10000;
+    private static final int READ_TIMEOUT = 15000;
 
     public static String fetchPlayerData(String urlString, String userAgent) {
+        return fetchPlayerData(urlString, userAgent, "application/json");
+    }
+
+    /**
+     * Performs up to three transport attempts with a caller-selected Accept header.
+     */
+    public static String fetchPlayerData(
+            String urlString,
+            String userAgent,
+            String accept
+    ) {
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
-                String response = doFetch(urlString, userAgent);
+                String response = doFetch(urlString, userAgent, accept);
                 if (response != null) {
                     return response;
                 }
@@ -53,7 +64,39 @@ public class AbyssAPIUtils {
         return "";
     }
 
+    /**
+     * Performs exactly one HTTP attempt. The alternating provider coordinator
+     * uses this instead of the retrying fetchPlayerData method.
+     */
+    public static String fetchPlayerDataOnce(String urlString, String userAgent) {
+        return fetchPlayerDataOnce(urlString, userAgent, "application/json");
+    }
+
+    /**
+     * Performs one HTTP attempt with a caller-selected Accept header. Shmeado
+     * player pages are HTML even though the other provider endpoints are JSON.
+     */
+    public static String fetchPlayerDataOnce(
+            String urlString,
+            String userAgent,
+            String accept
+    ) {
+        try {
+            return doFetch(urlString, userAgent, accept);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private static String doFetch(String urlString, String userAgent) throws IOException {
+        return doFetch(urlString, userAgent, "application/json");
+    }
+
+    private static String doFetch(
+            String urlString,
+            String userAgent,
+            String accept
+    ) throws IOException {
         HttpURLConnection connection = null;
         try {
             URL url = new URL(urlString);
@@ -64,7 +107,9 @@ public class AbyssAPIUtils {
             if (userAgent != null) {
                 connection.setRequestProperty("User-Agent", userAgent);
             }
-            connection.setRequestProperty("Accept", "application/json");
+            if (accept != null) {
+                connection.setRequestProperty("Accept", accept);
+            }
             int responseCode = connection.getResponseCode();
 
             if (responseCode == HttpURLConnection.HTTP_OK) {

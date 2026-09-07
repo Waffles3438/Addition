@@ -6,11 +6,13 @@ import cc.polyfrost.oneconfig.utils.commands.annotations.Command;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
 import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
-import me.waffles.additional.util.AbyssAPIUtils;
-import me.waffles.additional.util.ShmeadoAPIUtils;
+import me.waffles.additional.api.AbyssAPIUtils;
+import me.waffles.additional.api.StatsProviderUtils;
 import me.waffles.additional.playerData.Duels;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -20,6 +22,8 @@ import java.util.TreeMap;
 
 @Command(value = "d")
 public class DuelsStatsCommand {
+    private static final Logger LOGGER = LogManager.getLogger("Additional");
+
 
     @Main
     private void main() {
@@ -52,6 +56,13 @@ public class DuelsStatsCommand {
     }
 
     private void fetchAndPrintStats(String Username, String uuid) {
+        StatsProviderUtils.withPlayerLock(
+                Username,
+                () -> fetchAndPrintStatsLocked(Username, uuid)
+        );
+    }
+
+    private void fetchAndPrintStatsLocked(String Username, String uuid) {
         String key = Username.toLowerCase();
 
         // fetch stats here
@@ -59,31 +70,65 @@ public class DuelsStatsCommand {
         boolean needStats = !Additional.duelsStatsList.containsKey(key);
 
         if (needProfile || needStats) {
-            String stjson = fetchPlayerData(uuid);
-            boolean usedShmeadoFallback = false;
-
-            if (stjson == null || stjson.isEmpty()) {
-                stjson = ShmeadoAPIUtils.fetchPlayerStatsJson(Username);
-                usedShmeadoFallback = true;
+            long cacheGeneration = StatsProviderUtils.captureCacheGeneration();
+            StatsProviderUtils.ProfileData profileData =
+                    StatsProviderUtils.fetchProfileData(Username, uuid, needProfile);
+            if (profileData.isInterrupted()) {
+                return;
             }
 
-            if (stjson == null || stjson.isEmpty()) {
+            StatsProviderUtils.ResourceResult playerData = profileData.getPlayer();
+            if (!playerData.isSuccess()) {
+                LOGGER.warn("Player data was unavailable for {} after all provider cycles.", Username);
                 UChat.chat("Something went wrong while fetching stats for " + Username + ". Please try again.");
                 return;
             }
 
-            if (needStats) {
-                Additional.duelsStatsList.put(key, AbyssAPIUtils.parseDuelsPlayerData(stjson));
-            }
+            String stjson = playerData.getJson();
+            final Duels fetchedStats = needStats
+                    ? AbyssAPIUtils.parseDuelsPlayerData(stjson)
+                    : null;
+            final PlayerProfile fetchedProfile;
+            boolean guildUnavailable = false;
 
             if (needProfile) {
-                String guild = usedShmeadoFallback
-                        ? ShmeadoAPIUtils.fetchPlayerGuildJson(uuid)
-                        : fetchPlayerGuildData(uuid);
-                if (guild == null || guild.isEmpty()) {
-                    guild = "{}";
+                StatsProviderUtils.ResourceResult guildData = profileData.getGuild();
+                String guild = "{}";
+                if (guildData.isSuccess()) {
+                    guild = guildData.getJson();
+                } else if (guildData.isUnavailable()) {
+                    guildUnavailable = true;
                 }
-                Additional.playerProfileList.put(key, AbyssAPIUtils.parsePlayerProfilePlayerData(stjson, guild));
+                fetchedProfile = AbyssAPIUtils.parsePlayerProfilePlayerData(stjson, guild);
+            } else {
+                fetchedProfile = null;
+            }
+
+            boolean committed = StatsProviderUtils.commitIfCurrent(cacheGeneration, () -> {
+                if (needStats) {
+                    Additional.duelsStatsList.put(key, fetchedStats);
+                }
+                if (needProfile) {
+                    Additional.playerProfileList.put(key, fetchedProfile);
+                }
+            });
+            if (!committed) {
+                return;
+            }
+
+            if (playerData.getProvider() == StatsProviderUtils.Provider.SHMEADO) {
+                LOGGER.info("Using Shmeado instead of Abyss for {} Duels player data.", Username);
+            }
+            if (needProfile) {
+                StatsProviderUtils.ResourceResult guildData = profileData.getGuild();
+                if (guildData.isSuccess()
+                        && guildData.getProvider() == StatsProviderUtils.Provider.SHMEADO) {
+                    LOGGER.info("Using Shmeado instead of Abyss for {} Duels guild data.", Username);
+                }
+                if (guildUnavailable) {
+                    LOGGER.warn("Guild data was unavailable for {}; showing stats without a guild tag.", Username);
+                    UChat.chat(Username + " guild data is unavailable; showing stats without a guild tag.");
+                }
             }
         }
 
