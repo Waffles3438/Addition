@@ -4,10 +4,10 @@ import cc.polyfrost.oneconfig.libs.universal.UChat;
 import cc.polyfrost.oneconfig.utils.Multithreading;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Command;
 import cc.polyfrost.oneconfig.utils.commands.annotations.Main;
-import com.mojang.authlib.GameProfile;
 import me.waffles.additional.Additional;
 import me.waffles.additional.playerData.Bedwars;
 import me.waffles.additional.api.AbyssAPIUtils;
+import me.waffles.additional.api.MojangAPIUtils;
 import me.waffles.additional.api.StatsProviderUtils;
 import me.waffles.additional.playerData.PlayerProfile;
 import net.minecraft.client.Minecraft;
@@ -30,14 +30,13 @@ public class BedwarsStatsCommand {
     }
 
     @Main
-    private void main(GameProfile player) {
+    private void main(String username) {
         Multithreading.runAsync(() -> {
-            if (player == null || player.getName() == null || player.getId() == null) {
+            if (username == null || username.isEmpty()) {
                 UChat.chat("Invalid player");
                 return;
             }
 
-            String username = player.getName();
             String key = username.toLowerCase();
             if (Additional.playerProfileList.containsKey(key)
                     && Additional.bedwarsStatsList.containsKey(key)) {
@@ -45,7 +44,13 @@ public class BedwarsStatsCommand {
                 return;
             }
 
-            fetchAndPrintStats(username, player.getId().toString());
+            String uuid = MojangAPIUtils.fetchUuid(username);
+            if (uuid == null) {
+                UChat.chat("Invalid player");
+                return;
+            }
+
+            fetchAndPrintStats(username, uuid);
         });
     }
 
